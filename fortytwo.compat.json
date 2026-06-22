@@ -1,0 +1,7 @@
+{
+  "name": "@justfortytwo/persona",
+  "fortytwo.compat": {
+    "memoryToolContract": "^1",
+    "policySchema": "^1"
+  }
+}

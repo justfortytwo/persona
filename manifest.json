@@ -1,0 +1,434 @@
+{
+  "$schema": "https://raw.githubusercontent.com/justfortytwo/persona/main/manifest.schema.json",
+  "version": "1",
+  "description": "Field manifest for the fortytwo persona templates. The CLI (fortytwo init) prompts for each field, stores answers in the gitignored .fortytwo/identity.json, and renders templates/**/*.tmpl into the project's gitignored context/. Every {{placeholder}} used in a template has an entry here.",
+  "fields": [
+    {
+      "key": "agent_name",
+      "prompt": "What is your assistant's name? (e.g. the persona it answers to)",
+      "type": "string",
+      "required": true,
+      "default": "Ford"
+    },
+    {
+      "key": "owner_name",
+      "prompt": "Your full name (how the assistant refers to you)",
+      "type": "string",
+      "required": true,
+      "default": null
+    },
+    {
+      "key": "owner_email",
+      "prompt": "Your primary email address (used for owner facts; never published)",
+      "type": "string",
+      "required": false,
+      "default": null
+    },
+    {
+      "key": "owner_address",
+      "prompt": "Your base location or mailing address (city/country is enough; never published)",
+      "type": "string",
+      "required": false,
+      "default": null
+    },
+    {
+      "key": "owner_timezone",
+      "prompt": "Your IANA timezone (e.g. Europe/Rome, America/New_York)",
+      "type": "string",
+      "required": true,
+      "default": "UTC"
+    },
+    {
+      "key": "owner_locale",
+      "prompt": "Your locale code (e.g. en-US, it-IT)",
+      "type": "string",
+      "required": true,
+      "default": "en-US"
+    },
+    {
+      "key": "owner_languages",
+      "prompt": "Languages you write in, comma-separated (the assistant matches what you use)",
+      "type": "string",
+      "required": true,
+      "default": "English"
+    },
+    {
+      "key": "owner_primary_language",
+      "prompt": "Default language when the assistant initiates with no recent inbound message",
+      "type": "string",
+      "required": true,
+      "default": "English"
+    },
+    {
+      "key": "owner_language_register",
+      "prompt": "Any register/formality note for your language(s) (e.g. a preferred formal vs. informal address form; leave blank if none)",
+      "type": "string",
+      "required": false,
+      "default": ""
+    },
+    {
+      "key": "owner_role",
+      "prompt": "Your one-line role (e.g. 'Technical founder; CTO of <company>')",
+      "type": "string",
+      "required": true,
+      "default": null
+    },
+    {
+      "key": "owner_positioning",
+      "prompt": "How the assistant should position you (the honest framing, not a hype label)",
+      "type": "text",
+      "required": true,
+      "default": null
+    },
+    {
+      "key": "owner_public_positioning",
+      "prompt": "How you present yourself publicly (title + focus areas)",
+      "type": "text",
+      "required": false,
+      "default": null
+    },
+    {
+      "key": "owner_public_sources",
+      "prompt": "Public URLs about you (site, bio, profiles), one per line",
+      "type": "list",
+      "required": false,
+      "default": []
+    },
+    {
+      "key": "owner_identity_summary",
+      "prompt": "A short paragraph: who you are as a person and professional",
+      "type": "text",
+      "required": true,
+      "default": null
+    },
+    {
+      "key": "owner_territory",
+      "prompt": "Your natural territory: the lenses through which you see problems, one per line",
+      "type": "list",
+      "required": false,
+      "default": []
+    },
+    {
+      "key": "owner_bio_anchors",
+      "prompt": "Factual biography anchors (milestones, ventures, roles), one per line",
+      "type": "list",
+      "required": false,
+      "default": []
+    },
+    {
+      "key": "owner_personal_topics",
+      "prompt": "Personal topics you can credibly talk about, one per line",
+      "type": "list",
+      "required": false,
+      "default": []
+    },
+    {
+      "key": "owner_good_angle_example",
+      "prompt": "Example of a good angle on a personal topic (kept personal, not forced into a thesis)",
+      "type": "text",
+      "required": false,
+      "default": null
+    },
+    {
+      "key": "owner_bad_angle_example",
+      "prompt": "Example of a bad angle (forcing a personal interest into a professional moral)",
+      "type": "text",
+      "required": false,
+      "default": null
+    },
+    {
+      "key": "owner_bio_short",
+      "prompt": "Your short bio",
+      "type": "text",
+      "required": false,
+      "default": null
+    },
+    {
+      "key": "owner_bio_personal",
+      "prompt": "Your personal-voice bio",
+      "type": "text",
+      "required": false,
+      "default": null
+    },
+    {
+      "key": "owner_bio_formal",
+      "prompt": "Your formal / events bio",
+      "type": "text",
+      "required": false,
+      "default": null
+    },
+    {
+      "key": "owner_interests",
+      "prompt": "Your interests (always-loaded summary), one per line",
+      "type": "list",
+      "required": false,
+      "default": []
+    },
+    {
+      "key": "owner_values",
+      "prompt": "Your operating values and what you care about, one per line",
+      "type": "list",
+      "required": true,
+      "default": []
+    },
+    {
+      "key": "owner_expertise",
+      "prompt": "Domains where you have real depth, one per line",
+      "type": "list",
+      "required": true,
+      "default": []
+    },
+    {
+      "key": "owner_boundaries",
+      "prompt": "Hard boundaries / do-not lines for representing you, one per line",
+      "type": "list",
+      "required": true,
+      "default": []
+    },
+    {
+      "key": "owner_core_thesis",
+      "prompt": "Your core thesis / through-line belief",
+      "type": "text",
+      "required": false,
+      "default": null
+    },
+    {
+      "key": "owner_mother_phrases",
+      "prompt": "Signature phrases that capture your approach (orientation, not to be recited), one per line",
+      "type": "list",
+      "required": false,
+      "default": []
+    },
+    {
+      "key": "owner_domain_beliefs",
+      "prompt": "Your beliefs across your working domains (markdown is fine)",
+      "type": "text",
+      "required": false,
+      "default": null
+    },
+    {
+      "key": "owner_anti_patterns",
+      "prompt": "Anti-patterns you explicitly reject, one per line",
+      "type": "list",
+      "required": false,
+      "default": []
+    },
+    {
+      "key": "owner_manifesto",
+      "prompt": "Your mini-manifesto (a few lines in your own voice)",
+      "type": "text",
+      "required": false,
+      "default": null
+    },
+    {
+      "key": "owner_positioning_rule",
+      "prompt": "Your final positioning rule (one sentence that survives the hype)",
+      "type": "text",
+      "required": false,
+      "default": null
+    },
+    {
+      "key": "owner_voice_tone",
+      "prompt": "Your tone in one short phrase (e.g. 'reflective, dry, anti-hype')",
+      "type": "string",
+      "required": true,
+      "default": null
+    },
+    {
+      "key": "owner_voice_formality",
+      "prompt": "Your formality level (e.g. casual, neutral, formal)",
+      "type": "string",
+      "required": false,
+      "default": "neutral"
+    },
+    {
+      "key": "owner_voice_verbosity",
+      "prompt": "Your verbosity preference (e.g. terse, balanced, expansive)",
+      "type": "string",
+      "required": false,
+      "default": "balanced"
+    },
+    {
+      "key": "owner_voice_tone_traits",
+      "prompt": "Tone traits as a detailed list, one per line",
+      "type": "list",
+      "required": false,
+      "default": []
+    },
+    {
+      "key": "owner_voice_summary",
+      "prompt": "One line capturing the essence of your voice",
+      "type": "text",
+      "required": false,
+      "default": null
+    },
+    {
+      "key": "owner_writing_structure",
+      "prompt": "The typical shape your pieces take, one step per line",
+      "type": "list",
+      "required": false,
+      "default": []
+    },
+    {
+      "key": "owner_writing_structure_example",
+      "prompt": "A short worked example of that structure",
+      "type": "text",
+      "required": false,
+      "default": null
+    },
+    {
+      "key": "owner_rhythm_example",
+      "prompt": "A short example showing your sentence rhythm",
+      "type": "text",
+      "required": false,
+      "default": null
+    },
+    {
+      "key": "owner_vocab_good",
+      "prompt": "Words/phrases in your natural register (use freely), one per line",
+      "type": "list",
+      "required": false,
+      "default": []
+    },
+    {
+      "key": "owner_vocab_caution",
+      "prompt": "Words to use only when earned, one per line",
+      "type": "list",
+      "required": false,
+      "default": []
+    },
+    {
+      "key": "owner_vocab_avoid",
+      "prompt": "Off-voice words to avoid, one per line",
+      "type": "list",
+      "required": false,
+      "default": []
+    },
+    {
+      "key": "owner_writing_never",
+      "prompt": "Things to never do when writing for you, one per line",
+      "type": "list",
+      "required": false,
+      "default": []
+    },
+    {
+      "key": "owner_primary_publishing_channel",
+      "prompt": "Your main publishing channel (e.g. LinkedIn, X, blog)",
+      "type": "string",
+      "required": false,
+      "default": "LinkedIn"
+    },
+    {
+      "key": "owner_post_requirements",
+      "prompt": "What a good post of yours must have, one per line",
+      "type": "list",
+      "required": false,
+      "default": []
+    },
+    {
+      "key": "owner_post_length_preference",
+      "prompt": "Your preferred post length",
+      "type": "string",
+      "required": false,
+      "default": "medium-short"
+    },
+    {
+      "key": "owner_cta_preferred",
+      "prompt": "Calls-to-action you like (soft/implicit), one per line",
+      "type": "list",
+      "required": false,
+      "default": []
+    },
+    {
+      "key": "owner_cta_avoid",
+      "prompt": "Calls-to-action you avoid, one per line",
+      "type": "list",
+      "required": false,
+      "default": []
+    },
+    {
+      "key": "owner_coherent_angles",
+      "prompt": "Themes that are authentically yours (markdown grouped by area is fine)",
+      "type": "text",
+      "required": false,
+      "default": null
+    },
+    {
+      "key": "owner_visual_style",
+      "prompt": "Your visual style rules for decks/graphics/content, one per line",
+      "type": "list",
+      "required": false,
+      "default": []
+    },
+    {
+      "key": "owner_visual_aesthetic",
+      "prompt": "One line: what your aesthetic should communicate",
+      "type": "text",
+      "required": false,
+      "default": null
+    },
+    {
+      "key": "owner_orientation_prompt",
+      "prompt": "A reusable orientation prompt for writing in your voice",
+      "type": "text",
+      "required": false,
+      "default": null
+    },
+    {
+      "key": "owner_quality_test",
+      "prompt": "Your pre-publish quality-test questions, one per line",
+      "type": "list",
+      "required": false,
+      "default": []
+    },
+    {
+      "key": "owner_domain_name",
+      "prompt": "Name of your primary venture / domain",
+      "type": "string",
+      "required": false,
+      "default": null
+    },
+    {
+      "key": "owner_domain_narrative",
+      "prompt": "The correct one-paragraph narrative for that venture/domain",
+      "type": "text",
+      "required": false,
+      "default": null
+    },
+    {
+      "key": "owner_domain_layers",
+      "prompt": "The operating layers of the domain (markdown is fine)",
+      "type": "text",
+      "required": false,
+      "default": null
+    },
+    {
+      "key": "owner_domain_formula",
+      "prompt": "A synthetic formula for the domain (e.g. 'Input -> Intelligence -> Action')",
+      "type": "text",
+      "required": false,
+      "default": null
+    },
+    {
+      "key": "owner_domain_distinction",
+      "prompt": "The distinction that protects the positioning from being misread",
+      "type": "text",
+      "required": false,
+      "default": null
+    },
+    {
+      "key": "owner_domain_strong_position",
+      "prompt": "The stronger position to claim",
+      "type": "text",
+      "required": false,
+      "default": null
+    },
+    {
+      "key": "owner_domain_philosophy",
+      "prompt": "How the domain treats its core work (operating philosophy)",
+      "type": "text",
+      "required": false,
+      "default": null
+    }
+  ]
+}
