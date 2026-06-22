@@ -97,3 +97,7 @@ targets. The CLI reads it during `fortytwo doctor` and warns on a mismatch:
 ## License
 
 MIT © 2026 justfortytwo
+
+---
+
+Created and maintained by [**Enrico Deleo**](https://enricodeleo.com).
