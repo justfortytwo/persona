@@ -96,7 +96,7 @@ targets. The CLI reads it during `fortytwo doctor` and warns on a mismatch:
 
 ## License
 
-MIT © 2026 justfortytwo
+MIT © 2026 Enrico Deleo
 
 ---
 
