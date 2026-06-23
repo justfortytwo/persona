@@ -1,7 +1,22 @@
 {
   "$schema": "https://raw.githubusercontent.com/justfortytwo/persona/main/manifest.schema.json",
   "version": "1",
-  "description": "Field manifest for the fortytwo persona templates. The CLI (fortytwo init) prompts for each field, stores answers in the gitignored .fortytwo/identity.json, and renders templates/**/*.tmpl into the project's gitignored context/. Every {{placeholder}} used in a template has an entry here.",
+  "manifestVersion": 1,
+  "description": "Field manifest for the fortytwo persona templates. The CLI (fortytwo init) prompts for each field, stores answers in the gitignored .fortytwo/identity.json, and renders templates/**/*.tmpl into the project's gitignored context/. Every {{placeholder}} used in a template has an entry here. `files` maps each template to its rendered output and render mode (managed = re-rendered every run; captured = written once, then owner-owned).",
+  "files": [
+    { "template": "CLAUDE.md.tmpl", "output": "CLAUDE.md", "mode": "managed" },
+    { "template": "context/INDEX.md.tmpl", "output": "context/INDEX.md", "mode": "managed" },
+    { "template": "context/OWNER.md.tmpl", "output": "context/OWNER.md", "mode": "captured" },
+    { "template": "context/PROFILE.md.tmpl", "output": "context/PROFILE.md", "mode": "captured" },
+    { "template": "context/SOUL.md.tmpl", "output": "context/SOUL.md", "mode": "captured" },
+    { "template": "context/rules/APPROVED.md.tmpl", "output": "context/rules/APPROVED.md", "mode": "captured" },
+    { "template": "context/rules/PROPOSED.md.tmpl", "output": "context/rules/PROPOSED.md", "mode": "captured" },
+    { "template": "context/memory/INDEX.md.tmpl", "output": "context/memory/INDEX.md", "mode": "managed" },
+    { "template": "context/memory/domain-positioning.md.tmpl", "output": "context/memory/domain-positioning.md", "mode": "captured" },
+    { "template": "context/memory/owner-beliefs.md.tmpl", "output": "context/memory/owner-beliefs.md", "mode": "captured" },
+    { "template": "context/memory/owner-profile.md.tmpl", "output": "context/memory/owner-profile.md", "mode": "captured" },
+    { "template": "context/memory/owner-voice-and-writing.md.tmpl", "output": "context/memory/owner-voice-and-writing.md", "mode": "captured" }
+  ],
   "fields": [
     {
       "key": "agent_name",

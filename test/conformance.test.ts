@@ -51,8 +51,16 @@ interface ManifestField {
   default?: unknown;
 }
 
+interface PersonaFileEntry {
+  template: string;
+  output: string;
+  mode: "managed" | "captured";
+}
+
 interface Manifest {
+  manifestVersion?: number;
   fields: ManifestField[];
+  files?: PersonaFileEntry[];
 }
 
 const manifestRaw = readFileSync(MANIFEST_PATH, "utf8");
@@ -131,6 +139,40 @@ describe("ford conformance", () => {
   it("fortytwo.compat.json parses as valid JSON", () => {
     const raw = readFileSync(COMPAT_PATH, "utf8");
     expect(() => JSON.parse(raw)).not.toThrow();
+  });
+
+  // The installer's renderer reads this files map to know which template
+  // produces which output and whether it is re-rendered (managed) or written
+  // once and then user-owned (captured). It must stay in lockstep with the
+  // actual templates on disk, or `fortytwo init` would silently skip files.
+  it("ships a files map covering every template exactly once", () => {
+    expect(manifest.files, "manifest.files is missing").toBeDefined();
+    const files = manifest.files!;
+    const mapped = files.map((f) => f.template).sort();
+    const onDisk = templateFiles
+      .map((f) => relative(TEMPLATES_DIR, f))
+      .sort();
+    expect(mapped, "files map does not match templates on disk").toEqual(onDisk);
+  });
+
+  it("every files entry has a valid mode and a derived, contained output path", () => {
+    const problems: string[] = [];
+    for (const f of manifest.files ?? []) {
+      if (f.mode !== "managed" && f.mode !== "captured") {
+        problems.push(`${f.template}: invalid mode ${JSON.stringify(f.mode)}`);
+      }
+      // output is the template path minus the trailing ".tmpl"
+      const expectedOutput = f.template.replace(/\.tmpl$/, "");
+      if (f.output !== expectedOutput) {
+        problems.push(
+          `${f.template}: output ${JSON.stringify(f.output)} should be ${JSON.stringify(expectedOutput)}`,
+        );
+      }
+      if (f.output.split("/").includes("..")) {
+        problems.push(`${f.template}: output escapes project root`);
+      }
+    }
+    expect(problems, problems.join("\n")).toEqual([]);
   });
 
   it("leaks NO personal data in templates/ or manifest.json", () => {
