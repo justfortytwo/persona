@@ -87,7 +87,7 @@ function collectPlaceholders(): Map<string, string[]> {
 
 const placeholderUsage = collectPlaceholders();
 
-describe("ford conformance", () => {
+describe("persona manifest conformance", () => {
   it("ships at least one template and a populated manifest", () => {
     expect(templateFiles.length).toBeGreaterThan(0);
     expect(manifest.fields.length).toBeGreaterThan(0);

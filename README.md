@@ -62,7 +62,11 @@ or biographical detail is committed here — every owner-specific value is a
 
 ## Field manifest
 
-`manifest.json` is an array of field descriptors, each:
+`manifest.json` is an **object**, not a bare array. Its top level carries
+`version`, `manifestVersion`, and a `description`, plus two arrays: a `files`
+map (template → output → render mode) and a `fields` list of descriptors.
+
+Each entry in `fields` looks like:
 
 ```json
 {
@@ -76,6 +80,35 @@ or biographical detail is committed here — every owner-specific value is a
 
 `type` is one of `string`, `text` (multi-line), or `list` (one item per line).
 Every `{{placeholder}}` used anywhere under `templates/` has a matching entry.
+
+### The `files` map: `managed` vs `captured`
+
+The `files` array tells the CLI which template renders to which output, and how
+that output is treated on a re-run. This is load-bearing for à-la-carte users
+who keep editing their context after install:
+
+```json
+{ "template": "context/OWNER.md.tmpl", "output": "context/OWNER.md", "mode": "captured" }
+```
+
+- **`managed`** — re-rendered from `identity.json` on **every** `fortytwo init`
+  / `fortytwo update`, so template improvements always land. Used for files you
+  are not meant to hand-edit: `CLAUDE.md`, the `context/INDEX.md` files.
+- **`captured`** — rendered **once** on first install, then **owner-owned** and
+  never clobbered by a later `update`. Used for everything you will live in and
+  tune by hand: `OWNER.md`, `PROFILE.md`, `SOUL.md`, the `rules/` files, and the
+  whole memory corpus.
+
+The `output` path is always the `template` path minus the trailing `.tmpl`.
+
+### Owner facts that are captured but never rendered
+
+A few fields exist purely for the owner record. `owner_email` and
+`owner_address` are prompted at init and stored in `.fortytwo/identity.json`
+(for the owner record and the Memory MCP) but are **intentionally not** rendered
+into any template — no `{{owner_email}}` / `{{owner_address}}` token exists. So
+if you wonder why init asks for an email and a location that never show up in
+`context/`, that is by design: they stay in your gitignored identity file.
 
 ## Compatibility
 
