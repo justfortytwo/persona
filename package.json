@@ -1,6 +1,6 @@
 {
   "name": "@justfortytwo/persona",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Templated identity and runtime context for a fortytwo personal assistant. Ships only templates and a field manifest — never any owner's real data.",
   "type": "module",
   "license": "MIT",
