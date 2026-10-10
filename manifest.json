@@ -104,7 +104,7 @@
     },
     {
       "key": "owner_public_sources",
-      "prompt": "Public URLs about you (site, bio, profiles), one per line",
+      "prompt": "Public URLs about you (site, bio, profiles)",
       "type": "list",
       "required": false,
       "default": []
@@ -118,21 +118,21 @@
     },
     {
       "key": "owner_territory",
-      "prompt": "Your natural territory: the lenses through which you see problems, one per line",
+      "prompt": "Your natural territory: the lenses through which you see problems",
       "type": "list",
       "required": false,
       "default": []
     },
     {
       "key": "owner_bio_anchors",
-      "prompt": "Factual biography anchors (milestones, ventures, roles), one per line",
+      "prompt": "Factual biography anchors (milestones, ventures, roles)",
       "type": "list",
       "required": false,
       "default": []
     },
     {
       "key": "owner_personal_topics",
-      "prompt": "Personal topics you can credibly talk about, one per line",
+      "prompt": "Personal topics you can credibly talk about",
       "type": "list",
       "required": false,
       "default": []
@@ -174,28 +174,28 @@
     },
     {
       "key": "owner_interests",
-      "prompt": "Your interests (always-loaded summary), one per line",
+      "prompt": "Your interests (always-loaded summary)",
       "type": "list",
       "required": false,
       "default": []
     },
     {
       "key": "owner_values",
-      "prompt": "Your operating values and what you care about, one per line",
+      "prompt": "Your operating values and what you care about",
       "type": "list",
       "required": true,
       "default": []
     },
     {
       "key": "owner_expertise",
-      "prompt": "Domains where you have real depth, one per line",
+      "prompt": "Domains where you have real depth",
       "type": "list",
       "required": true,
       "default": []
     },
     {
       "key": "owner_boundaries",
-      "prompt": "Hard boundaries / do-not lines for representing you, one per line",
+      "prompt": "Hard boundaries / do-not lines for representing you",
       "type": "list",
       "required": true,
       "default": []
@@ -209,7 +209,7 @@
     },
     {
       "key": "owner_mother_phrases",
-      "prompt": "Signature phrases that capture your approach (orientation, not to be recited), one per line",
+      "prompt": "Signature phrases that capture your approach (orientation, not to be recited)",
       "type": "list",
       "required": false,
       "default": []
@@ -223,7 +223,7 @@
     },
     {
       "key": "owner_anti_patterns",
-      "prompt": "Anti-patterns you explicitly reject, one per line",
+      "prompt": "Anti-patterns you explicitly reject",
       "type": "list",
       "required": false,
       "default": []
@@ -265,7 +265,7 @@
     },
     {
       "key": "owner_voice_tone_traits",
-      "prompt": "Tone traits as a detailed list, one per line",
+      "prompt": "Tone traits as a detailed list",
       "type": "list",
       "required": false,
       "default": []
@@ -279,7 +279,7 @@
     },
     {
       "key": "owner_writing_structure",
-      "prompt": "The typical shape your pieces take, one step per line",
+      "prompt": "The typical shape your pieces take, as ordered steps",
       "type": "list",
       "required": false,
       "default": []
@@ -300,28 +300,28 @@
     },
     {
       "key": "owner_vocab_good",
-      "prompt": "Words/phrases in your natural register (use freely), one per line",
+      "prompt": "Words/phrases in your natural register (use freely)",
       "type": "list",
       "required": false,
       "default": []
     },
     {
       "key": "owner_vocab_caution",
-      "prompt": "Words to use only when earned, one per line",
+      "prompt": "Words to use only when earned",
       "type": "list",
       "required": false,
       "default": []
     },
     {
       "key": "owner_vocab_avoid",
-      "prompt": "Off-voice words to avoid, one per line",
+      "prompt": "Off-voice words to avoid",
       "type": "list",
       "required": false,
       "default": []
     },
     {
       "key": "owner_writing_never",
-      "prompt": "Things to never do when writing for you, one per line",
+      "prompt": "Things to never do when writing for you",
       "type": "list",
       "required": false,
       "default": []
@@ -335,7 +335,7 @@
     },
     {
       "key": "owner_post_requirements",
-      "prompt": "What a good post of yours must have, one per line",
+      "prompt": "What a good post of yours must have",
       "type": "list",
       "required": false,
       "default": []
@@ -349,14 +349,14 @@
     },
     {
       "key": "owner_cta_preferred",
-      "prompt": "Calls-to-action you like (soft/implicit), one per line",
+      "prompt": "Calls-to-action you like (soft/implicit)",
       "type": "list",
       "required": false,
       "default": []
     },
     {
       "key": "owner_cta_avoid",
-      "prompt": "Calls-to-action you avoid, one per line",
+      "prompt": "Calls-to-action you avoid",
       "type": "list",
       "required": false,
       "default": []
@@ -370,7 +370,7 @@
     },
     {
       "key": "owner_visual_style",
-      "prompt": "Your visual style rules for decks/graphics/content, one per line",
+      "prompt": "Your visual style rules for decks/graphics/content",
       "type": "list",
       "required": false,
       "default": []
@@ -391,7 +391,7 @@
     },
     {
       "key": "owner_quality_test",
-      "prompt": "Your pre-publish quality-test questions, one per line",
+      "prompt": "Your pre-publish quality-test questions",
       "type": "list",
       "required": false,
       "default": []

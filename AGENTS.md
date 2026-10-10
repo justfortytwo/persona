@@ -54,7 +54,7 @@ Do not weaken these tests to make them pass; fix the templates or manifest.
 
 1. Every `{{token}}` used in any template has a matching `fields[].key`.
 2. Every field has a non-empty `key` and `prompt`, and `type` is one of
-   `string` | `text` (multi-line) | `list` (one item per line). No duplicate keys.
+   `string` | `text` (multi-line) | `list` (an array of items; the installer asks for them one at a time, blank entry to finish). No duplicate keys.
 3. `manifest.json` and `fortytwo.compat.json` parse as JSON.
 4. `manifest.files` lists **every** `.tmpl` on disk exactly once (paths relative
    to `templates/`).

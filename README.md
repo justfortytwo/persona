@@ -78,7 +78,7 @@ Each entry in `fields` looks like:
 }
 ```
 
-`type` is one of `string`, `text` (multi-line), or `list` (one item per line).
+`type` is one of `string`, `text` (multi-line), or `list` (an array of items; the installer asks for them one at a time, blank entry to finish).
 Every `{{placeholder}}` used anywhere under `templates/` has a matching entry.
 
 ### The `files` map: `managed` vs `captured`
