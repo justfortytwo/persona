@@ -5,23 +5,37 @@ Proposed train, verified on Node 22.22.1:
 | Package | Previous | Proposed | Runtime dependency / installer compatibility |
 | --- | --- | --- | --- |
 | persona | 1.0.0-0 | 1.0.0-1 | No runtime dependencies |
-| memory | 1.0.0-0 | 1.0.0-1 | Existing optional gate/salience peers unchanged |
-| scheduler | 1.0.0-2 | 1.0.0-3 | memory 1.0.0-1, persona 1.0.0-1, runner 1.0.0-0 |
-| installer | 1.0.0-9 | 1.0.0-10 | memory/persona 1.0.0-1, scheduler 1.0.0-3, telegram 1.0.0-2, gate ^0.1.0 |
+| memory | 1.0.0-0 | 1.0.0-2 | Existing optional gate/salience peers unchanged |
+| scheduler | 1.0.0-2 | 1.0.0-3 | memory 1.0.0-2, persona 1.0.0-1, runner 1.0.0-0 |
+| installer | 1.0.0-9 | 1.0.0-10 | memory 1.0.0-2, persona 1.0.0-1, scheduler 1.0.0-3, telegram 1.0.0-2, gate ^0.1.0 |
 
 Runner 1.0.0-0 and Telegram 1.0.0-2 are already published and unchanged. Gate
 ^0.1.0 resolved to published 0.1.1 in the archive acceptance run. Scheduler's
 optional Telegram peer accepts 1.0.0-2; Telegram's optional memory peer accepts
-1.0.0-1. No peer overrides or legacy-peer-deps were used.
+1.0.0-2. No peer overrides or legacy-peer-deps were used.
 
-Publish memory and persona first (either order), scheduler next, installer last.
-Use a prerelease dist-tag; do not move latest as part of this train without a
+Memory 1.0.0-2 is already published (npm tag `next`; `latest` unchanged).
+Publish persona next, scheduler after persona, installer last.
+Use the `prerelease` dist-tag for the remaining packages; do not move latest as part of this train without a
 separate product decision. Verify each dependency is available before publishing
 its consumer. Publish the verified archive bytes: scheduler's lockfile records
 persona/memory archive integrity. Repacking after changing shipped files requires
 refreshing those integrity entries and repeating package verification.
 
+Versions are already committed. When using release-it, pass `--no-increment`
+and `--npm.tag=prerelease`; use `--npm.publishPath` with the verified archive
+to preserve its bytes. Preview with `--dry-run` before releasing. Do not use
+the superseded scheduler/installer archives built against memory 1.0.0-1.
+
 ## Final verification
+
+After memory was published as 1.0.0-2, scheduler and installer were repacked
+against that exact version. Their builds and 54/158 tests passed again. Fresh
+init and the curated 1.0.0-9 upgrade were repeated with the actual published
+memory package and the remaining verified archives; both passed. A clean
+scheduler npm ci/build/test also passed with the published memory integrity.
+The live harness now expects memory 1.0.0-2; pin its new docs commit from the
+release report before running it. No runtime source or persona templates changed.
 
 - Persona: 42 tests; memory: 70; scheduler: 54; installer: 158. All four builds pass.
 - All four npm archives inspected. Persona contains dist/oneiros.js, policy/state,

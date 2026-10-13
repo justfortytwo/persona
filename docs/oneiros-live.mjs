@@ -51,7 +51,7 @@ assert(baseline.head > 0 && baseline.curated?.length > 0, 'Complete strengthened
 
 // Require actual published versions/integrities, not links, local tarballs or a
 // local registry overlay. Network errors fail before adding evidence.
-const versions = { persona: '1.0.0-1', memory: '1.0.0-1', scheduler: '1.0.0-3', installer: '1.0.0-10', runner: '1.0.0-0' };
+const versions = { persona: '1.0.0-1', memory: '1.0.0-2', scheduler: '1.0.0-3', installer: '1.0.0-10', runner: '1.0.0-0' };
 const lock = JSON.parse(readFileSync('package-lock.json'));
 for (const [name, version] of Object.entries(versions)) {
   const path = `node_modules/@justfortytwo/${name}`;
