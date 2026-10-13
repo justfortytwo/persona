@@ -1,7 +1,7 @@
 {
   "name": "@justfortytwo/persona",
-  "version": "1.0.0-0",
-  "description": "Templated identity and runtime context for a fortytwo personal assistant. Ships only templates and a field manifest — never any owner's real data.",
+  "version": "1.0.0-1",
+  "description": "Templated identity, runtime context and internal Oneiros consolidation for fortytwo.",
   "type": "module",
   "license": "MIT",
   "author": {
@@ -18,10 +18,14 @@
     "manifest.json",
     "fortytwo.compat.json",
     "README.md",
-    "LICENSE"
+    "LICENSE",
+    "dist",
+    "oneiros"
   ],
   "scripts": {
-    "test": "vitest run"
+    "test": "vitest run",
+    "build": "tsc -p tsconfig.json",
+    "prepublishOnly": "npm run build"
   },
   "devDependencies": {
     "@types/node": "^22.10.0",
@@ -30,5 +34,7 @@
   },
   "publishConfig": {
     "access": "public"
-  }
+  },
+  "main": "./dist/oneiros.js",
+  "types": "./dist/oneiros.d.ts"
 }

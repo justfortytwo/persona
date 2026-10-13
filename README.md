@@ -5,8 +5,8 @@ assistant. This repo ships the scaffolding the installer renders into a user's
 project so their assistant has a name, a voice, owner facts, house rules, and a
 recallable memory corpus.
 
-This is **not** an npm runtime package. It ships **only templates and a field
-manifest** — never any owner's real data.
+It ships templates, a field manifest and the internal **Oneiros** consolidation
+library/prompt. It never ships an owner's real data.
 
 ## What's in here
 
@@ -42,9 +42,9 @@ flow:
 2. The CLI **renders** every `templates/**/*.tmpl` against
    `.fortytwo/identity.json`, replacing each token, and writes the result into
    the user's **gitignored `context/`** (and `CLAUDE.md` at the project root).
-3. Rendering is **idempotent**: re-running `fortytwo init` or `fortytwo update`
-   re-renders from `identity.json`, so template improvements land without
-   clobbering the captured values.
+3. Re-running `fortytwo init` re-renders managed templates and preserves existing
+   captured files. `fortytwo update` reconciles machine-owned runtime assets only;
+   it does not re-render context.
 
 The concise, always-loaded summary lives in `OWNER.md` / `PROFILE.md`; the deep,
 atomized owner profile lives in the Memory MCP (retrieved on demand). The memory
@@ -52,7 +52,8 @@ corpus files are reindexed for semantic recall on the next wake.
 
 ## What ships — and what never does
 
-Only templates + the manifest + the compat declaration ship in this repo.
+Templates, manifest, compatibility declaration, compiled Oneiros library and
+private worker prompt ship in the package.
 
 The rendered output (`context/*`, `CLAUDE.md`), `.fortytwo/identity.json`, and
 any uploaded profile material are **all gitignored** in the user's project and
@@ -92,7 +93,7 @@ who keep editing their context after install:
 ```
 
 - **`managed`** — re-rendered from `identity.json` on **every** `fortytwo init`
-  / `fortytwo update`, so template improvements always land. Used for files you
+  invocation. Update preserves these files too. Used for files you
   are not meant to hand-edit: `CLAUDE.md`, the `context/INDEX.md` files.
 - **`captured`** — rendered **once** on first install, then **owner-owned** and
   never clobbered by a later `update`. Used for everything you will live in and
@@ -127,6 +128,66 @@ targets. The CLI reads it during `fortytwo doctor` and warns on a mismatch:
 - **`policySchema`** — the approval-gate policy / allowlist format the
   non-negotiable policy and house rules assume.
 
+## Oneiros
+
+Oneiros is internal background maintenance. Scheduler owns the daily
+`persona.oneiros` job (`17 3 * * *`, UTC); runner executes a separate tool-free
+session. The private prompt is bundled at `oneiros/prompt.md`. Nothing is installed
+in `.claude/agents`, no skill/MCP is registered, and no main-session context is added.
+
+Persona exports `initialize(root, head)`, `hasWork(root, memory)` and
+`refine({ root, memory, worker })`. The worker receives a JSON baseline and bounded
+memory delta, and returns `{ "additions": [] }` or evidence-backed additions.
+Code permits only new plain-text bullets in existing PROFILE Voice, Interests
+and Expertise sections. It protects all other files/sections, validates evidence
+IDs, rejects inferred/imported/superseded evidence and preserves existing bytes.
+Eligible evidence is live and `observed: "stated"`, with either `source: "owner"`
+or Telegram's existing inbound-message provenance (including configured owner
+actor names). Outbound assistant messages are excluded.
+Free-form provenance is not authentication: the prompt must still distinguish
+statements from quoted commands and speculation. The model's semantic judgment
+is not a security guarantee; the deterministic mutation boundary is enforced.
+
+A cursor is `{ database, position }`: a persistent memory DB identity and its
+AUTOINCREMENT insertion high watermark, including deleted IDs. Memory supplies
+bounded ascending pages; persona checkpoints only the reviewed page. No-op
+reviews also advance. New memory arriving during a run remains for a later run.
+
+State is private under `.fortytwo/oneiros/`: `checkpoint.json`, transient PID
+locks and an interrupted-write `pending.json`. Writes use fsync plus atomic
+rename. Recovery applies a validated receipt only if the context still matches
+its before/after hash; otherwise it stops for manual reconciliation. Retrying
+cannot apply the same receipt twice. Do not edit these files while a run is active.
+An editor that ignores the lock can still race the final filesystem rename;
+changes observed before the write are rejected. Coordinate manual edits by
+stopping the runtime. Oversized input (>100 KB) fails closed without checkpointing.
+
+Fresh init initializes at the current memory head (zero for an empty database)
+and seeds one persistent job without new onboarding questions. Updating an older
+installation does the same only when state is missing, skipping historical
+memory. Repeated updates preserve the checkpoint and job identity. No historical
+backfill is performed, and no context is rendered during update.
+
+The coordinated versions are persona `1.0.0-1`, memory `1.0.0-1`, scheduler
+`1.0.0-3` and installer `1.0.0-10`; runner `1.0.0-0` already has the needed API.
+From the project root, existing `1.0.0-9` installations use this one-time bootstrap
+after publication: `fortytwo stop`,
+`npx @justfortytwo/installer@1.0.0-10 update`, `fortytwo start`. The invoked
+installer persists its newer exact version into the project before updating
+engines; subsequent `fortytwo` commands use that version. No re-exec, manual npm install or init is needed. Update refuses a live supervisor or live
+scheduler heartbeat so an old daemon cannot consume the new job. The worker
+requires a Claude CLI supporting `--safe-mode`; unsupported flags fail the job
+without changing context/checkpoint. Provider and authentication configuration
+are preserved. No live model call is required by the test suite.
+
+```sh
+npm test
+npm run build
+```
+
+See [the implementation note](docs/oneiros-implementation.md) for boundaries and
+migration rationale.
+
 ## License
 
 MIT © 2026 Enrico Deleo
@@ -134,3 +195,10 @@ MIT © 2026 Enrico Deleo
 ---
 
 Created and maintained by [**Enrico Deleo**](https://enricodeleo.com).
+
+Oneiros requires semantic fit: Voice covers expression/tone/communication,
+Interests covers topics, and Expertise covers knowledge/depth. Working-style
+and decision-principle observations without an allowed semantic home remain in
+memory; they do not become Voice or Expertise bullets. Dedicated sections are
+a future persona-model evolution. Semantic classification is model policy; the
+deterministic validator continues to enforce the narrow structural surface.

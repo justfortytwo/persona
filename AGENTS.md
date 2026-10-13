@@ -5,9 +5,9 @@ Guidance for AI coding agents working in this repository.
 ## What this is
 
 `@justfortytwo/persona` is the templated **identity and runtime context** for a
-fortytwo personal assistant. It ships **only** Markdown templates, a field
-manifest, and a compat declaration. There is no runtime code: the package is
-consumed as data by the installer CLI (`@justfortytwo/installer`), which prompts
+fortytwo personal assistant. It ships Markdown templates, a field
+manifest, a compat declaration, and an internal Oneiros consolidation library.
+The templates are consumed as data by the installer CLI (`@justfortytwo/installer`), which prompts
 for fields, stores answers in the user's gitignored `.fortytwo/identity.json`,
 and renders `templates/**/*.tmpl` into the user's gitignored `context/` and
 root `CLAUDE.md`.
@@ -27,12 +27,14 @@ templates/
     memory/*.md.tmpl           # memory corpus (INDEX + owner/domain files)
 manifest.json                  # { version, manifestVersion, description, files[], fields[] }
 fortytwo.compat.json           # contract majors: memoryToolContract, policySchema
-test/conformance.test.ts       # the only test file; enforces the contract below
+src/                          # internal Oneiros policy, state and consolidation API
+oneiros/prompt.md             # private isolated-worker instructions
+test/                         # template conformance and Oneiros regressions
 .github/workflows/ci.yml       # calls justfortytwo/.github node-ci.yml@main
 ```
 
 Published files (`package.json` `files`): `templates`, `manifest.json`,
-`fortytwo.compat.json`, `README.md`, `LICENSE`. Nothing else ships.
+`fortytwo.compat.json`, `dist`, `oneiros`, `README.md`, `LICENSE`. Nothing else ships.
 
 ## Commands
 
@@ -40,11 +42,12 @@ From `package.json` (Node, ESM, npm with `package-lock.json`):
 
 ```bash
 npm ci          # install dev deps (vitest, typescript, @types/node)
-npm test        # vitest run — the conformance suite
+npm test        # vitest run — conformance and Oneiros suites
+npm run build   # tsc -> dist (required before packing)
 ```
 
-There is no build, lint, or typecheck script, and no `tsconfig.json`; vitest
-runs the TypeScript test directly. CI delegates to the shared org workflow
+There is no lint script; TypeScript compilation validates the internal API.
+Vitest runs the TypeScript tests directly. CI delegates to the shared org workflow
 `justfortytwo/.github/.github/workflows/node-ci.yml@main` (leaf package, no
 sibling linking).
 
@@ -68,7 +71,7 @@ Do not weaken these tests to make them pass; fix the templates or manifest.
 - **Adding a template:** create `templates/<path>.tmpl`, add a `files` entry
   (`output` = path without `.tmpl`), choose a mode, and add a `fields` entry for
   any new placeholder. Run `npm test`.
-- **Render modes:** `managed` = re-rendered on every `fortytwo init`/`update`
+- **Render modes:** `managed` = re-rendered on `fortytwo init` (update never renders context)
   (currently `CLAUDE.md`, `context/INDEX.md`, `context/memory/INDEX.md`).
   `captured` = written once, then owner-owned and never clobbered (everything
   else). Changing a file's mode changes user-facing upgrade behavior.
@@ -215,3 +218,12 @@ Examples:
 - browser automation should normally come from an existing MCP/plugin rather than a fortytwo-specific browser implementation.
 
 Before introducing a new abstraction, check the relevant sibling repositories and the agent runtime's existing capabilities to avoid duplicating functionality elsewhere in the fortytwo stack.
+
+## Oneiros boundary
+
+Only PROFILE Voice, Interests and Expertise accept additive evidence-backed
+bullets. All other context is protected by code. Never expose the private worker
+as a MCP, global skill or main-session agent. Memory owns insertion cursors;
+scheduler owns recurrence and runner invocation; installer initializes state at
+current memory head and seeds the job without rendering curated context.
+See `docs/oneiros-implementation.md` for recovery and upgrade invariants.
