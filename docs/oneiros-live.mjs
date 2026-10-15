@@ -18,7 +18,7 @@ import { liveRuntime, isPidAlive } from './node_modules/@justfortytwo/installer/
 
 // The release report supplies this external immutable docs pin. Check it before
 // inspecting project state or contacting the package registry/provider.
-const runtimeCommit = '59fdb0f9a5552075540d80a2325cbcca8cc3d94d';
+const runtimeCommit = '77fa620a95801794cf141a50c96a2f329bdb6587';
 const docsRoot = process.env.ONEIROS_DOCS_ROOT;
 const docsCommit = process.env.ONEIROS_DOCS_COMMIT;
 assert(docsRoot && /^[0-9a-f]{40}$/.test(docsCommit ?? ''), 'Set the clean docs root and full release-report docs hash');
@@ -51,7 +51,7 @@ assert(baseline.head > 0 && baseline.curated?.length > 0, 'Complete strengthened
 
 // Require actual published versions/integrities, not links, local tarballs or a
 // local registry overlay. Network errors fail before adding evidence.
-const versions = { persona: '1.0.0-1', memory: '1.0.0-2', scheduler: '1.0.0-3', installer: '1.0.0-10', runner: '1.0.0-0' };
+const versions = { persona: '1.0.0-2', memory: '1.0.0-2', scheduler: '1.0.0-3', installer: '1.0.0-10', runner: '1.0.0-0' };
 const lock = JSON.parse(readFileSync('package-lock.json'));
 for (const [name, version] of Object.entries(versions)) {
   const path = `node_modules/@justfortytwo/${name}`;

@@ -4,10 +4,10 @@ Proposed train, verified on Node 22.22.1:
 
 | Package | Previous | Proposed | Runtime dependency / installer compatibility |
 | --- | --- | --- | --- |
-| persona | 1.0.0-0 | 1.0.0-1 | No runtime dependencies |
+| persona | 1.0.0-0 | 1.0.0-2 | No runtime dependencies |
 | memory | 1.0.0-0 | 1.0.0-2 | Existing optional gate/salience peers unchanged |
-| scheduler | 1.0.0-2 | 1.0.0-3 | memory 1.0.0-2, persona 1.0.0-1, runner 1.0.0-0 |
-| installer | 1.0.0-9 | 1.0.0-10 | memory 1.0.0-2, persona 1.0.0-1, scheduler 1.0.0-3, telegram 1.0.0-2, gate ^0.1.0 |
+| scheduler | 1.0.0-2 | 1.0.0-3 | memory 1.0.0-2, persona 1.0.0-2, runner 1.0.0-0 |
+| installer | 1.0.0-9 | 1.0.0-10 | memory 1.0.0-2, persona 1.0.0-2, scheduler 1.0.0-3, telegram 1.0.0-2, gate ^0.1.0 |
 
 Runner 1.0.0-0 and Telegram 1.0.0-2 are already published and unchanged. Gate
 ^0.1.0 resolved to published 0.1.1 in the archive acceptance run. Scheduler's
@@ -15,7 +15,8 @@ optional Telegram peer accepts 1.0.0-2; Telegram's optional memory peer accepts
 1.0.0-2. No peer overrides or legacy-peer-deps were used.
 
 Memory 1.0.0-2 is already published (npm tag `next`; `latest` unchanged).
-Publish persona next, scheduler after persona, installer last.
+Persona 1.0.0-2 is also published; its registry integrity matches the tested
+archive exactly. Publish scheduler next and installer last.
 Use the `prerelease` dist-tag for the remaining packages; do not move latest as part of this train without a
 separate product decision. Verify each dependency is available before publishing
 its consumer. Publish the verified archive bytes: scheduler's lockfile records
@@ -25,9 +26,17 @@ refreshing those integrity entries and repeating package verification.
 Versions are already committed. When using release-it, pass `--no-increment`
 and `--npm.tag=prerelease`; use `--npm.publishPath` with the verified archive
 to preserve its bytes. Preview with `--dry-run` before releasing. Do not use
-the superseded scheduler/installer archives built against memory 1.0.0-1.
+the superseded scheduler/installer archives built against memory or persona 1.0.0-1.
 
 ## Final verification
+
+After persona was published as 1.0.0-2, the remaining pins, scheduler lockfile,
+bootstrap fixture and live acceptance were aligned again. Persona (42), scheduler
+(54) and installer (158) tests and all three builds passed. Clean scheduler npm
+ci/build/test and both archive installation flows passed. The local persona
+archive used in verification matches npm
+`sha512-0mXG/Gf8oIDlAm34PE03/GDP3gYh3w73333OWlX4jIPs745trcoZ5TqCno2N5kOZFhlgp+8WnyUBFX67sjXz1A==`.
+The current verified archive directory is `/tmp/oneiros-release-both-2/`.
 
 After memory was published as 1.0.0-2, scheduler and installer were repacked
 against that exact version. Their builds and 54/158 tests passed again. Fresh
@@ -222,8 +231,8 @@ fake CLI, FakeEmbedder, local registry overlay or linked packages are accepted.
 Set `ONEIROS_DOCS_ROOT` to the exact **clean docs-only commit** recorded in the
 release report, and export that report's full hash as `ONEIROS_DOCS_COMMIT`.
 Do not derive the expected hash from the checkout's current HEAD. The separate
-persona runtime/package release commit remains
-`59fdb0f9a5552075540d80a2325cbcca8cc3d94d`; it predates the live harness. The
+persona package release commit is
+`77fa620a95801794cf141a50c96a2f329bdb6587`; its runtime source matches the reviewed Oneiros implementation. The
 preflight requires the pinned docs commit to descend from that runtime commit
 with no changes outside docs/. A commit cannot embed its own hash, so the final
 release report is the authoritative external docs pin. The harness is read from
@@ -271,8 +280,8 @@ umask 077
 export ONEIROS_DOCS_ROOT ONEIROS_DOCS_COMMIT
 test "$(git -C "$ONEIROS_DOCS_ROOT" rev-parse HEAD)" = "$ONEIROS_DOCS_COMMIT"
 test -z "$(git -C "$ONEIROS_DOCS_ROOT" status --porcelain --untracked-files=all)"
-git -C "$ONEIROS_DOCS_ROOT" merge-base --is-ancestor 59fdb0f9a5552075540d80a2325cbcca8cc3d94d "$ONEIROS_DOCS_COMMIT"
-git -C "$ONEIROS_DOCS_ROOT" diff --exit-code 59fdb0f9a5552075540d80a2325cbcca8cc3d94d "$ONEIROS_DOCS_COMMIT" -- . ':(exclude)docs/**'
+git -C "$ONEIROS_DOCS_ROOT" merge-base --is-ancestor 77fa620a95801794cf141a50c96a2f329bdb6587 "$ONEIROS_DOCS_COMMIT"
+git -C "$ONEIROS_DOCS_ROOT" diff --exit-code 77fa620a95801794cf141a50c96a2f329bdb6587 "$ONEIROS_DOCS_COMMIT" -- . ':(exclude)docs/**'
 git -C "$ONEIROS_DOCS_ROOT" cat-file -e "$ONEIROS_DOCS_COMMIT:docs/oneiros-live.mjs"
 : "${ONEIROS_RITA_ROOT:?Set this to the separate, stopped normal Rita project}"
 : "${ONEIROS_VERIFY_DIR:?Keep this from the successful upgrade acceptance}"
