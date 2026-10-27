@@ -52,8 +52,12 @@ context write succeeds. A reviewed no-op checkpoints too. Conflicts fail closed.
 
 ## Initialization and upgrade
 
-Store private state under .fortytwo/oneiros. Both init and update initialize a
-missing cursor at the current memory high watermark, never zero by assumption.
+Store private state under .fortytwo/oneiros, one cursor and receipt per evidence
+stream: memory keeps checkpoint.json / pending.json; the transcript stream uses
+transcript-checkpoint.json / transcript-pending.json. Both init and update initialize a
+missing memory cursor at the current memory high watermark, never zero by assumption;
+the transcript cursor is initialized at exactly the position given (the transcript
+position already consumed by migration), not necessarily the transcript head.
 A new empty DB naturally starts at zero. Existing state is preserved; mismatched
 DB identity fails closed. No implicit historical backfill. Seed one persistent
 job using scheduler's existing seeder, after state initialization. Daemon boot
@@ -90,6 +94,11 @@ selection while disabling customizations; environment cleanup is session-only.
 
 Recovery decision: before hash → persist proposed result then checkpoint; after
 hash → checkpoint only; neither → preserve files and stop for reconciliation.
+Each stream has its own receipt; every leftover receipt (memory and transcript)
+is recovered before any round reads PROFILE, then one round runs per initialised
+stream, memory first, each building on the profile the previous round wrote.
+An initialised transcript stream with no transcript source supplied fails closed
+rather than being skipped.
 The receipt is durable before replacement. Stale-lock takeover is serialized by
 an exclusive reaper lock and rechecks inode ownership before removing anything.
 Ordinary owner editors do not participate in this lock; a last-instant edit can
@@ -102,7 +111,10 @@ Read the live page again before apply to detect deletion/supersession during
 reasoning. A page with no eligible owner-stated rows checkpoints without a model.
 Eligibility also recognizes the real Telegram inbound message envelope
 (source=telegram:<actor>, meta.direction=inbound, meta.kind=message); free-form
-provenance remains untrusted data, including quoted instructions.
+provenance remains untrusted data, including quoted instructions. Transcript
+pages follow the same cursor, re-read and budget rules per stream; only rows with
+channel=telegram, direction=inbound, kind=message and actor exactly `owner` are
+eligible, so Telegram's OWNER_ACTOR must stay `owner`.
 
 Non-dry-run update refuses live services before any install/reconciliation,
 including unchanged-version retries. Stop/update/start uses the existing lifecycle.

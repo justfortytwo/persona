@@ -11,18 +11,35 @@ export function eligibleEvidence(row: Evidence): boolean {
     return typeof meta.actor === 'string' && row.source === `telegram:${meta.actor}` && meta.direction === 'inbound' && meta.kind === 'message';
   } catch { return false; }
 }
-export interface TranscriptEvidenceRow { id: number; channel: string; direction: string; actor: string; kind: string; content: string; thread_id: string | null }
+// `meta` is the transcript row's own JSON envelope as written by the channel
+// adapter (e.g. the Telegram bridge); it is optional so older sources still fit.
+export interface TranscriptEvidenceRow { id: number; channel: string; direction: string; actor: string; kind: string; content: string; thread_id: string | null; meta?: string | null }
 // Transcript rows are eligible only as the owner's inbound Telegram messages.
 // Assistant replies and scheduler rows never are. These labels are eligibility
 // hints, never authentication or instructions.
 export function eligibleTranscriptRow(row: TranscriptEvidenceRow): boolean {
   return row.channel === 'telegram' && row.direction === 'inbound' && row.kind === 'message' && row.actor === 'owner';
 }
+// Only these row-meta fields reach the worker, as provenance context (e.g. a
+// forwarded message is someone else's words). They add no eligibility rule.
+// Malformed or unexpected meta is ignored, never an error.
+function rowContext(meta: string | null | undefined): { source_kind?: string; telegram?: { has_forward: boolean } } {
+  let parsed: unknown;
+  try { parsed = JSON.parse(meta ?? ''); } catch { return {}; }
+  if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return {};
+  const m = parsed as { source_kind?: unknown; telegram?: unknown };
+  const out: { source_kind?: string; telegram?: { has_forward: boolean } } = {};
+  if (typeof m.source_kind === 'string') out.source_kind = m.source_kind;
+  const t = m.telegram as { has_forward?: unknown } | null | undefined;
+  if (t && typeof t === 'object' && typeof t.has_forward === 'boolean') out.telegram = { has_forward: t.has_forward };
+  return out;
+}
 // Maps a transcript row onto the memory evidence shape so the worker prompt and
 // applyProposal stay unchanged; ineligible rows are marked internal, which
-// eligibleEvidence always rejects.
+// eligibleEvidence always rejects. The synthesized actor/direction/kind come
+// from the row columns and are never overridden by row meta.
 export function transcriptToEvidence(row: TranscriptEvidenceRow): Evidence {
-  return { id: row.id, content: row.content, source: `${row.channel}:${row.actor}`, observed: eligibleTranscriptRow(row) ? 'stated' : 'internal', superseded_by: null, meta: JSON.stringify({ actor: row.actor, direction: row.direction, kind: row.kind }) };
+  return { id: row.id, content: row.content, source: `${row.channel}:${row.actor}`, observed: eligibleTranscriptRow(row) ? 'stated' : 'internal', superseded_by: null, meta: JSON.stringify({ actor: row.actor, direction: row.direction, kind: row.kind, ...rowContext(row.meta) }) };
 }
 export const editableSections = ['Voice', 'Interests', 'Expertise'] as const;
 export function applyProposal(profile: string, proposal: unknown, entries: Evidence[], cursor: Cursor): string {

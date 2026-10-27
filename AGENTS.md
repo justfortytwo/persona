@@ -225,7 +225,11 @@ Only PROFILE Voice, Interests and Expertise accept additive evidence-backed
 bullets. All other context is protected by code. Never expose the private worker
 as a MCP, global skill or main-session agent. Evidence comes from two streams,
 memory and the transcript (owner inbound Telegram messages only), each with its
-own checkpoint and pending receipt; memory keeps the original file names.
+own checkpoint and pending receipt; memory keeps `checkpoint.json` /
+`pending.json`, the transcript uses `transcript-checkpoint.json` /
+`transcript-pending.json`. All receipts are recovered before any round; rounds
+run per stream, memory first. An initialised transcript stream with no source
+supplied fails closed.
 Memory owns insertion cursors;
 scheduler owns recurrence and runner invocation; installer initializes state at
 current memory head and seeds the job without rendering curated context.

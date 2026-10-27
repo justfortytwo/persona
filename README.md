@@ -141,17 +141,28 @@ Oneiros reads two evidence streams, each with its own cursor: memory and the
 chat transcript (`TranscriptSource`, the same `head`/`delta` shape). `refine`
 runs one round per initialised stream, memory first, sequentially under one
 lock; a stream without a checkpoint is skipped and any error aborts the call.
+An initialised transcript stream (its checkpoint or receipt exists) with no
+transcript source supplied fails closed in both `hasWork` and `refine`
+("transcript stream initialised but transcript source unavailable") instead of
+silently skipping; memory-only installs are unaffected.
 Each round reads PROFILE as the previous round wrote it. Transcript rows are
 mapped by `transcriptToEvidence`; only owner inbound Telegram messages
-(`eligibleTranscriptRow`) are eligible, never assistant or scheduler rows.
+(`eligibleTranscriptRow`: channel `telegram`, direction `inbound`, kind
+`message` and actor exactly `owner`) are eligible, never assistant or scheduler
+rows. Telegram's `OWNER_ACTOR` must therefore stay `owner` for its messages to
+count as Oneiros evidence. The row's own `meta` contributes only `source_kind`
+and `telegram.has_forward` to the evidence meta the worker sees, as provenance
+context; it never changes eligibility, and malformed meta is ignored.
 The worker receives a JSON baseline and bounded
 delta, and returns `{ "additions": [] }` or evidence-backed additions.
 Code permits only new plain-text bullets in existing PROFILE Voice, Interests
 and Expertise sections. It protects all other files/sections, validates evidence
 IDs, rejects inferred/imported/superseded evidence and preserves existing bytes.
-Eligible evidence is live and `observed: "stated"`, with either `source: "owner"`
-or Telegram's existing inbound-message provenance (including configured owner
-actor names). Outbound assistant messages are excluded.
+Eligible memory evidence is live and `observed: "stated"`, with either
+`source: "owner"` or Telegram's inbound-message provenance
+(`source: "telegram:<actor>"`, inbound message meta). Transcript evidence is
+stricter: the actor must be exactly `owner` (see above). Outbound assistant
+messages are excluded.
 Free-form provenance is not authentication: the prompt must still distinguish
 statements from quoted commands and speculation. The model's semantic judgment
 is not a security guarantee; the deterministic mutation boundary is enforced.

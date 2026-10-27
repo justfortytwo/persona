@@ -11,6 +11,8 @@ const streamFiles: Record<Stream, { checkpoint: string; pending: string }> = {
   memory: { checkpoint: '.fortytwo/oneiros/checkpoint.json', pending: '.fortytwo/oneiros/pending.json' },
   transcript: { checkpoint: '.fortytwo/oneiros/transcript-checkpoint.json', pending: '.fortytwo/oneiros/transcript-pending.json' },
 };
+// Human label used in errors, so a transcript fault is never reported as memory.
+export const streamLabel: Record<Stream, string> = { memory: 'Memory', transcript: 'Transcript' };
 function files(stream: Stream): { checkpoint: string; pending: string } {
   if (!Object.hasOwn(streamFiles, stream)) throw new Error('Unknown Oneiros stream');
   return streamFiles[stream];
@@ -42,14 +44,14 @@ export function readCursor(root: string, stream: Stream = 'memory'): Cursor | nu
   const path = checkpointPath(root, stream);
   if (!existsSync(path)) return null;
   const c = JSON.parse(readFileSync(path, 'utf8'));
-  validateCursor(c); return c;
+  validateCursor(c, stream); return c;
 }
-export function validateCursor(c: Cursor): void {
-  if (!c || typeof c.database !== 'string' || !/^[\w-]+$/.test(c.database) || !Number.isSafeInteger(c.position) || c.position < 0) throw new Error('Invalid memory cursor');
+export function validateCursor(c: Cursor, stream: Stream = 'memory'): void {
+  if (!c || typeof c.database !== 'string' || !/^[\w-]+$/.test(c.database) || !Number.isSafeInteger(c.position) || c.position < 0) throw new Error(`Invalid ${stream} cursor`);
 }
-export function compatible(previous: Cursor, next: Cursor): void {
-  validateCursor(next);
-  if (previous.database !== next.database || previous.position > next.position) throw new Error('Memory database changed or moved backwards');
+export function compatible(previous: Cursor, next: Cursor, stream: Stream = 'memory'): void {
+  validateCursor(next, stream);
+  if (previous.database !== next.database || previous.position > next.position) throw new Error(`${streamLabel[stream]} database changed or moved backwards`);
 }
 // The reaper is itself an exclusive PID lock. Every stale takeover rechecks the
 // main inode while holding it, so a second reaper cannot unlink a new live lock.
@@ -102,7 +104,7 @@ export function recover(root: string, stream: Stream = 'memory'): void {
   const receiptPath = pendingPath(root, stream);
   if (!existsSync(receiptPath)) return;
   const r: Receipt = JSON.parse(readFileSync(receiptPath, 'utf8'));
-  compatible(r.previous, r.next);
+  compatible(r.previous, r.next, stream);
   const cursor = readCursor(root, stream);
   if (!cursor || cursor.database !== r.previous.database || ![r.previous.position, r.next.position].includes(cursor.position) || hash(r.content) !== r.after) throw new Error('Invalid recovery receipt');
   const path = safePath(root, profilePath); const current = hash(readFileSync(path, 'utf8'));

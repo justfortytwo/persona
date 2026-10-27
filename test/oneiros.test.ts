@@ -200,7 +200,7 @@ it.each(['Working Style','Decision Principles'])('does not authorize the future 
 
 // Transcript as a second evidence stream. Memory keeps its original files.
 const tdb = 'test-transcript';
-type Row = { id: number; channel: string; direction: string; actor: string; kind: string; content: string; thread_id: string | null };
+type Row = { id: number; channel: string; direction: string; actor: string; kind: string; content: string; thread_id: string | null; meta?: string | null };
 function setupBoth(transcriptHead = 0) {
   const s = setup(); let head = transcriptHead; const rows: Row[] = [];
   const transcript = {
@@ -226,6 +226,28 @@ describe('Oneiros transcript stream', () => {
       expect(eligibleTranscriptRow(row)).toBe(false);
       expect(transcriptToEvidence(row).observed).toBe('internal'); expect(eligibleEvidence(transcriptToEvidence(row))).toBe(false);
     }
+  });
+  it('merges source_kind and telegram.has_forward from the row meta into the evidence meta', async () => {
+    const { transcriptToEvidence } = await import('../src/oneiros.js');
+    const { eligibleEvidence } = await import('../src/policy.js');
+    const owner = { id: 3, channel: 'telegram', direction: 'inbound', actor: 'owner', kind: 'message', content: 'hi', thread_id: '42' };
+    const forwarded = transcriptToEvidence({ ...owner, meta: JSON.stringify({ source_kind: 'message', telegram: { has_forward: true, message_id: 9 }, other: 'dropped' }) });
+    expect(JSON.parse(forwarded.meta!)).toEqual({ actor: 'owner', direction: 'inbound', kind: 'message', source_kind: 'message', telegram: { has_forward: true } });
+    // Meta is context for the worker only; it adds no ineligibility rule.
+    expect(forwarded.observed).toBe('stated'); expect(eligibleEvidence(forwarded)).toBe(true);
+    // Row meta never overrides the synthesized eligibility labels.
+    expect(JSON.parse(transcriptToEvidence({ ...owner, meta: JSON.stringify({ actor: 'x', direction: 'outbound', kind: 'photo' }) }).meta!)).toEqual({ actor: 'owner', direction: 'inbound', kind: 'message' });
+    const plain = JSON.stringify({ actor: 'owner', direction: 'inbound', kind: 'message' });
+    for (const meta of [null, undefined, '', 'not json', '[1]', '"s"', 'null', JSON.stringify({ source_kind: 7, telegram: { has_forward: 'yes' } }), JSON.stringify({ telegram: null })]) {
+      const e = transcriptToEvidence({ ...owner, meta } as any);
+      expect(e.meta).toBe(plain); expect(eligibleEvidence(e)).toBe(true);
+    }
+  });
+  it('passes the merged meta through to the worker', async () => {
+    const s = setupBoth(); s.say('Forwarded note', { meta: JSON.stringify({ source_kind: 'message', telegram: { has_forward: true } }) } as any);
+    const worker = vi.fn(async (input: any) => { expect(JSON.parse(input.entries[0].meta)).toMatchObject({ source_kind: 'message', telegram: { has_forward: true } }); return { additions: [] }; });
+    await refine({ root: s.root, memory: s.memory, transcript: s.transcript, worker });
+    expect(worker).toHaveBeenCalledTimes(1);
   });
   it('applies a proposal citing an owner message and advances only the transcript checkpoint', async () => {
     const s = setupBoth(); s.say();
@@ -288,8 +310,19 @@ describe('Oneiros transcript stream', () => {
     const s = setupBoth();
     expect(hasWork(s.root, s.memory, s.transcript)).toBe(false);
     s.say(); expect(hasWork(s.root, s.memory, s.transcript)).toBe(true);
-    expect(hasWork(s.root, s.memory)).toBe(false);
     const m = setup(); expect(hasWork(m.root, m.memory, s.transcript)).toBe(false);
+  });
+  it('fails closed when the transcript stream is initialised but no transcript source is supplied', async () => {
+    const s = setupBoth(); s.say(); const worker = vi.fn();
+    expect(() => hasWork(s.root, s.memory)).toThrow(/transcript stream initialised but transcript source unavailable/);
+    await expect(refine({ root: s.root, memory: s.memory, worker })).rejects.toThrow(/transcript stream initialised but transcript source unavailable/);
+    expect(worker).not.toHaveBeenCalled(); expect(s.checkpoint('transcript-checkpoint.json').position).toBe(0);
+  });
+  it('memory-only installs without a transcript checkpoint need no transcript source', async () => {
+    const m = setup(); expect(hasWork(m.root, m.memory)).toBe(false);
+    m.add(); expect(hasWork(m.root, m.memory)).toBe(true);
+    await refine({ root: m.root, memory: m.memory, worker: async () => patch() });
+    expect(m.profile()).toContain('Prefers concise answers.');
   });
   it('skips an uninitialised transcript stream and keeps memory behaviour', async () => {
     const m = setup(); m.add(); const transcript = { head: () => ({ database: tdb, position: 5 }), delta: vi.fn() };
@@ -312,6 +345,16 @@ describe('Oneiros transcript stream', () => {
     expect(() => initialize(s.root, { database: 'other-db', position: 30 }, 'transcript')).toThrow();
     expect(() => initialize(s.root, { database: tdb, position: 3 }, 'transcript')).toThrow();
     expect(readCheckpoint(s.root)).toEqual({ database: 'test-db', position: 0 });
+  });
+  it('names the stream in cursor errors', async () => {
+    const s = setupBoth();
+    const moved = { head: () => ({ database: 'other-db', position: 0 }), delta: vi.fn() };
+    expect(() => hasWork(s.root, s.memory, moved)).toThrow('Transcript database changed or moved backwards');
+    expect(() => hasWork(s.root, moved, s.transcript)).toThrow('Memory database changed or moved backwards');
+    writeFileSync(join(s.root, '.fortytwo/oneiros/transcript-checkpoint.json'), JSON.stringify({ database: tdb, position: -1 }));
+    expect(() => hasWork(s.root, s.memory, s.transcript)).toThrow('Invalid transcript cursor');
+    writeFileSync(join(s.root, '.fortytwo/oneiros/checkpoint.json'), JSON.stringify({ database: 'bad db', position: 0 }));
+    expect(() => hasWork(s.root, s.memory, s.transcript)).toThrow('Invalid memory cursor');
   });
   it('rejects an unknown stream name', async () => {
     const { readCheckpoint } = await import('../src/oneiros.js');
