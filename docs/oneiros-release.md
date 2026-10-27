@@ -28,6 +28,11 @@ and `--npm.tag=prerelease`; use `--npm.publishPath` with the verified archive
 to preserve its bytes. Preview with `--dry-run` before releasing. Do not use
 the superseded scheduler/installer archives built against memory or persona 1.0.0-1.
 
+Note (transcript): a later persona release adds the transcript as a second
+evidence stream (`transcript-checkpoint.json` / `transcript-pending.json`).
+Memory-only callers and existing state files are unchanged; the transcript
+stream stays inactive until the installer initialises its checkpoint.
+
 ## Final verification
 
 After persona was published as 1.0.0-2, the remaining pins, scheduler lockfile,

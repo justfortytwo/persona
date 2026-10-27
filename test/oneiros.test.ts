@@ -197,3 +197,163 @@ it.each(['Working Style','Decision Principles'])('does not authorize the future 
   await expect(refine({...s,worker:async()=>({additions:[{section,text:'Prefers fewer moving parts.',evidence:[1],kind:'preference'}]})})).rejects.toThrow();
   expect(s.profile()).toBe(baseline);
 });
+
+// Transcript as a second evidence stream. Memory keeps its original files.
+const tdb = 'test-transcript';
+type Row = { id: number; channel: string; direction: string; actor: string; kind: string; content: string; thread_id: string | null };
+function setupBoth(transcriptHead = 0) {
+  const s = setup(); let head = transcriptHead; const rows: Row[] = [];
+  const transcript = {
+    head: () => ({ database: tdb, position: head }),
+    delta: (cursor: any) => ({ cursor: { database: tdb, position: head }, entries: rows.filter(r => r.id > cursor.position).map(r => ({ ...r })) }),
+  };
+  initialize(s.root, transcript.head(), 'transcript');
+  const say = (content = 'I prefer concise answers.', over: Partial<Row> = {}) => {
+    rows.push({ id: ++head, channel: 'telegram', direction: 'inbound', actor: 'owner', kind: 'message', content, thread_id: '42', ...over });
+  };
+  const checkpoint = (file: string) => JSON.parse(readFileSync(join(s.root, '.fortytwo/oneiros', file), 'utf8'));
+  return { ...s, transcript, rows, say, checkpoint };
+}
+describe('Oneiros transcript stream', () => {
+  it('maps transcript rows onto evidence and only owner inbound telegram messages are eligible', async () => {
+    const { eligibleTranscriptRow, transcriptToEvidence } = await import('../src/oneiros.js');
+    const { eligibleEvidence } = await import('../src/policy.js');
+    const owner: Row = { id: 3, channel: 'telegram', direction: 'inbound', actor: 'owner', kind: 'message', content: 'hi', thread_id: '42' };
+    expect(transcriptToEvidence(owner)).toEqual({ id: 3, content: 'hi', source: 'telegram:owner', observed: 'stated', superseded_by: null, meta: JSON.stringify({ actor: 'owner', direction: 'inbound', kind: 'message' }) });
+    expect(eligibleTranscriptRow(owner)).toBe(true); expect(eligibleEvidence(transcriptToEvidence(owner))).toBe(true);
+    for (const over of [{ actor: 'assistant', direction: 'outbound' }, { channel: 'scheduler', actor: 'scheduler', kind: 'wake' }, { direction: 'outbound' }, { kind: 'photo' }, { channel: 'cli' }, { actor: 'configured-owner' }]) {
+      const row = { ...owner, ...over };
+      expect(eligibleTranscriptRow(row)).toBe(false);
+      expect(transcriptToEvidence(row).observed).toBe('internal'); expect(eligibleEvidence(transcriptToEvidence(row))).toBe(false);
+    }
+  });
+  it('applies a proposal citing an owner message and advances only the transcript checkpoint', async () => {
+    const s = setupBoth(); s.say();
+    const worker = vi.fn(async (input: any) => {
+      expect(input.eligibleEvidenceIds).toEqual([1]);
+      expect(input.entries[0]).toMatchObject({ id: 1, content: 'I prefer concise answers.', source: 'telegram:owner', observed: 'stated' });
+      return patch();
+    });
+    expect(hasWork(s.root, s.memory, s.transcript)).toBe(true);
+    await refine({ root: s.root, memory: s.memory, transcript: s.transcript, worker });
+    expect(worker).toHaveBeenCalledTimes(1);
+    expect(s.profile()).toBe(baseline.replace('## Interests', '- Prefers concise answers. <!-- oneiros:test-transcript:1 -->\n\n## Interests'));
+    expect(s.checkpoint('transcript-checkpoint.json')).toEqual({ database: tdb, position: 1 });
+    expect(s.checkpoint('checkpoint.json')).toEqual({ database: 'test-db', position: 0 });
+    expect(hasWork(s.root, s.memory, s.transcript)).toBe(false);
+  });
+  it.each([
+    ['assistant', { actor: 'assistant', direction: 'outbound' }],
+    ['scheduler', { channel: 'scheduler', actor: 'scheduler', kind: 'wake' }],
+  ])('never accepts %s rows as evidence', async (_name, over) => {
+    const s = setupBoth(); s.say(); s.say('I prefer long answers.', over);
+    const p = patch(); p.additions[0]!.evidence = [2];
+    await expect(refine({ root: s.root, memory: s.memory, transcript: s.transcript, worker: async (input: any) => { expect(input.eligibleEvidenceIds).toEqual([1]); return p; } })).rejects.toThrow(/Unsupported evidence/);
+    expect(s.profile()).toBe(baseline); expect(s.checkpoint('transcript-checkpoint.json').position).toBe(0);
+  });
+  it('does not spawn a worker for transcript rows that are never eligible', async () => {
+    const s = setupBoth(); s.say('Reply', { actor: 'assistant', direction: 'outbound' }); const worker = vi.fn();
+    await refine({ root: s.root, memory: s.memory, transcript: s.transcript, worker });
+    expect(worker).not.toHaveBeenCalled(); expect(s.checkpoint('transcript-checkpoint.json').position).toBe(1);
+  });
+  it('runs memory first, then the transcript against the profile memory wrote', async () => {
+    const s = setupBoth(); s.add(); s.say('I enjoy astronomy.');
+    const seen: string[] = [];
+    await refine({ root: s.root, memory: s.memory, transcript: s.transcript, worker: async (input: any) => {
+      seen.push(input.entries[0].source);
+      if (input.entries[0].source === 'owner') return patch();
+      expect(input.profile).toContain('Prefers concise answers. <!-- oneiros:test-db:1 -->');
+      return { additions: [{ section: 'Interests', text: 'Enjoys astronomy.', evidence: [1], kind: 'fact' }] };
+    } });
+    expect(seen).toEqual(['owner', 'telegram:owner']);
+    expect(s.profile()).toContain('- Prefers concise answers. <!-- oneiros:test-db:1 -->');
+    expect(s.profile()).toContain('- Enjoys astronomy. <!-- oneiros:test-transcript:1 -->');
+    expect(s.checkpoint('checkpoint.json').position).toBe(1); expect(s.checkpoint('transcript-checkpoint.json').position).toBe(1);
+  });
+  it('a transcript failure aborts the call and leaves the transcript delta for retry', async () => {
+    const s = setupBoth(); s.say();
+    await expect(refine({ root: s.root, memory: s.memory, transcript: s.transcript, worker: async () => { throw new Error('worker failed'); } })).rejects.toThrow('worker failed');
+    expect(s.checkpoint('transcript-checkpoint.json').position).toBe(0); expect(hasWork(s.root, s.memory, s.transcript)).toBe(true);
+  });
+  it('rejects transcript rows changed during refinement', async () => {
+    const s = setupBoth(); s.say();
+    await expect(refine({ root: s.root, memory: s.memory, transcript: s.transcript, worker: async () => { s.rows[0]!.actor = 'assistant'; return patch(); } })).rejects.toThrow(/changed/);
+    expect(s.profile()).toBe(baseline); expect(s.checkpoint('transcript-checkpoint.json').position).toBe(0);
+  });
+  it('rejects an out-of-range transcript delta', async () => {
+    const s = setupBoth(); s.say(); s.rows[0]!.id = 7;
+    await expect(refine({ root: s.root, memory: s.memory, transcript: s.transcript, worker: vi.fn() })).rejects.toThrow(/Invalid transcript delta/);
+  });
+  it('hasWork reflects either initialised stream', () => {
+    const s = setupBoth();
+    expect(hasWork(s.root, s.memory, s.transcript)).toBe(false);
+    s.say(); expect(hasWork(s.root, s.memory, s.transcript)).toBe(true);
+    expect(hasWork(s.root, s.memory)).toBe(false);
+    const m = setup(); expect(hasWork(m.root, m.memory, s.transcript)).toBe(false);
+  });
+  it('skips an uninitialised transcript stream and keeps memory behaviour', async () => {
+    const m = setup(); m.add(); const transcript = { head: () => ({ database: tdb, position: 5 }), delta: vi.fn() };
+    await refine({ root: m.root, memory: m.memory, transcript, worker: async () => patch() });
+    expect(transcript.delta).not.toHaveBeenCalled(); expect(m.profile()).toContain('Prefers concise answers.');
+    const { readCheckpoint } = await import('../src/oneiros.js');
+    expect(readCheckpoint(m.root, 'transcript')).toBeNull(); expect(readCheckpoint(m.root)).toEqual({ database: 'test-db', position: 1 });
+  });
+  it('refuses to refine when no stream is initialised', async () => {
+    const root = mkdtempSync(join(tmpdir(), 'oneiros-')); roots.push(root);
+    await expect(refine({ root, memory: { head: () => ({ database: 'test-db', position: 0 }), delta: vi.fn() } as any, worker: vi.fn() })).rejects.toThrow(/not been initialized/);
+  });
+  it('initialises the transcript at exactly the given cursor, not the head', async () => {
+    const { readCheckpoint } = await import('../src/oneiros.js');
+    const s = setup(); initialize(s.root, { database: tdb, position: 12 }, 'transcript');
+    expect(readFileSync(join(s.root, '.fortytwo/oneiros/transcript-checkpoint.json'), 'utf8')).toBe(JSON.stringify({ database: tdb, position: 12 }));
+    expect(readCheckpoint(s.root, 'transcript')).toEqual({ database: tdb, position: 12 });
+    initialize(s.root, { database: tdb, position: 20 }, 'transcript');
+    expect(readCheckpoint(s.root, 'transcript')!.position).toBe(12);
+    expect(() => initialize(s.root, { database: 'other-db', position: 30 }, 'transcript')).toThrow();
+    expect(() => initialize(s.root, { database: tdb, position: 3 }, 'transcript')).toThrow();
+    expect(readCheckpoint(s.root)).toEqual({ database: 'test-db', position: 0 });
+  });
+  it('rejects an unknown stream name', async () => {
+    const { readCheckpoint } = await import('../src/oneiros.js');
+    const s = setup(); expect(() => readCheckpoint(s.root, '../memory' as any)).toThrow(/stream/);
+  });
+  it.each(['receipt', 'context', 'checkpoint'])('recovers a leftover transcript receipt after %s independently of memory', async stage => {
+    const { atomic, hash, recover } = await import('../src/state.js');
+    const { applyProposal } = await import('../src/policy.js');
+    const { transcriptToEvidence } = await import('../src/oneiros.js');
+    const s = setupBoth(); s.say();
+    const previous = { database: tdb, position: 0 }, next = s.transcript.head();
+    const after = applyProposal(baseline, patch(), s.transcript.delta(previous).entries.map(transcriptToEvidence), next);
+    atomic(join(s.root, '.fortytwo/oneiros/transcript-pending.json'), JSON.stringify({ previous, next, before: hash(baseline), after: hash(after), content: after, contextHashes: {} }));
+    if (stage !== 'receipt') atomic(join(s.root, 'context/PROFILE.md'), after);
+    if (stage === 'checkpoint') atomic(join(s.root, '.fortytwo/oneiros/transcript-checkpoint.json'), JSON.stringify(next));
+    expect(hasWork(s.root, s.memory, s.transcript)).toBe(true);
+    const worker = vi.fn(); await refine({ root: s.root, memory: s.memory, transcript: s.transcript, worker });
+    expect(worker).not.toHaveBeenCalled(); expect(s.profile()).toBe(after);
+    expect(s.checkpoint('transcript-checkpoint.json')).toEqual(next); expect(s.checkpoint('checkpoint.json').position).toBe(0);
+    recover(s.root, 'transcript'); expect(hasWork(s.root, s.memory, s.transcript)).toBe(false);
+  });
+  it('recovers a transcript receipt before the memory round edits the profile', async () => {
+    const { atomic, hash } = await import('../src/state.js');
+    const s = setupBoth(); s.add(); s.say('I enjoy astronomy.');
+    const after = baseline + '- transcript addition\n';
+    atomic(join(s.root, '.fortytwo/oneiros/transcript-pending.json'), JSON.stringify({ previous: { database: tdb, position: 0 }, next: s.transcript.head(), before: hash(baseline), after: hash(after), content: after, contextHashes: {} }));
+    const worker = vi.fn(async (input: any) => { expect(input.profile).toBe(after); return patch(); });
+    await refine({ root: s.root, memory: s.memory, transcript: s.transcript, worker });
+    expect(worker).toHaveBeenCalledTimes(1); expect(s.profile()).toContain('transcript addition'); expect(s.profile()).toContain('Prefers concise answers.');
+    expect(s.checkpoint('transcript-checkpoint.json').position).toBe(1); expect(s.checkpoint('checkpoint.json').position).toBe(1);
+  });
+  it('a transcript receipt for a different database or cursor is refused', async () => {
+    const { atomic, hash } = await import('../src/state.js');
+    const s = setupBoth(); s.say();
+    atomic(join(s.root, '.fortytwo/oneiros/transcript-pending.json'), JSON.stringify({ previous: { database: 'test-db', position: 0 }, next: { database: 'test-db', position: 1 }, before: hash(baseline), after: hash('x'), content: 'x', contextHashes: {} }));
+    await expect(refine({ root: s.root, memory: s.memory, transcript: s.transcript, worker: vi.fn() })).rejects.toThrow(/Invalid recovery receipt/);
+    expect(s.profile()).toBe(baseline); expect(s.checkpoint('transcript-checkpoint.json').position).toBe(0);
+  });
+  it('refuses a symlinked transcript checkpoint', async () => {
+    const { symlinkSync, unlinkSync } = await import('node:fs');
+    const s = setupBoth(); const target = join(s.root, 'elsewhere.json'); writeFileSync(target, JSON.stringify({ database: tdb, position: 0 }));
+    unlinkSync(join(s.root, '.fortytwo/oneiros/transcript-checkpoint.json')); symlinkSync(target, join(s.root, '.fortytwo/oneiros/transcript-checkpoint.json'));
+    expect(() => hasWork(s.root, s.memory, s.transcript)).toThrow(/Symlink/);
+  });
+});

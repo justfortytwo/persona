@@ -223,7 +223,10 @@ Before introducing a new abstraction, check the relevant sibling repositories an
 
 Only PROFILE Voice, Interests and Expertise accept additive evidence-backed
 bullets. All other context is protected by code. Never expose the private worker
-as a MCP, global skill or main-session agent. Memory owns insertion cursors;
+as a MCP, global skill or main-session agent. Evidence comes from two streams,
+memory and the transcript (owner inbound Telegram messages only), each with its
+own checkpoint and pending receipt; memory keeps the original file names.
+Memory owns insertion cursors;
 scheduler owns recurrence and runner invocation; installer initializes state at
 current memory head and seeds the job without rendering curated context.
 See `docs/oneiros-implementation.md` for recovery and upgrade invariants.

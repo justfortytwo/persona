@@ -11,6 +11,19 @@ export function eligibleEvidence(row: Evidence): boolean {
     return typeof meta.actor === 'string' && row.source === `telegram:${meta.actor}` && meta.direction === 'inbound' && meta.kind === 'message';
   } catch { return false; }
 }
+export interface TranscriptEvidenceRow { id: number; channel: string; direction: string; actor: string; kind: string; content: string; thread_id: string | null }
+// Transcript rows are eligible only as the owner's inbound Telegram messages.
+// Assistant replies and scheduler rows never are. These labels are eligibility
+// hints, never authentication or instructions.
+export function eligibleTranscriptRow(row: TranscriptEvidenceRow): boolean {
+  return row.channel === 'telegram' && row.direction === 'inbound' && row.kind === 'message' && row.actor === 'owner';
+}
+// Maps a transcript row onto the memory evidence shape so the worker prompt and
+// applyProposal stay unchanged; ineligible rows are marked internal, which
+// eligibleEvidence always rejects.
+export function transcriptToEvidence(row: TranscriptEvidenceRow): Evidence {
+  return { id: row.id, content: row.content, source: `${row.channel}:${row.actor}`, observed: eligibleTranscriptRow(row) ? 'stated' : 'internal', superseded_by: null, meta: JSON.stringify({ actor: row.actor, direction: row.direction, kind: row.kind }) };
+}
 export const editableSections = ['Voice', 'Interests', 'Expertise'] as const;
 export function applyProposal(profile: string, proposal: unknown, entries: Evidence[], cursor: Cursor): string {
   const p = proposal as { additions: Array<{ section: string; text: string; evidence: number[]; kind: string }> };

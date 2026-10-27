@@ -195,3 +195,13 @@ describe("persona manifest conformance", () => {
     ).toEqual([]);
   });
 });
+
+describe("package entry exports", () => {
+  it("exposes the Oneiros API consumed by scheduler and installer", async () => {
+    const api = await import("../src/oneiros.js");
+    for (const name of ["initialize", "hasWork", "refine", "readCheckpoint", "eligibleTranscriptRow", "transcriptToEvidence"]) {
+      expect(typeof (api as Record<string, unknown>)[name], name).toBe("function");
+    }
+    expect(typeof api.workerPrompt).toBe("string");
+  });
+});

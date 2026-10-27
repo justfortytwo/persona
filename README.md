@@ -135,9 +135,17 @@ Oneiros is internal background maintenance. Scheduler owns the daily
 session. The private prompt is bundled at `oneiros/prompt.md`. Nothing is installed
 in `.claude/agents`, no skill/MCP is registered, and no main-session context is added.
 
-Persona exports `initialize(root, head)`, `hasWork(root, memory)` and
-`refine({ root, memory, worker })`. The worker receives a JSON baseline and bounded
-memory delta, and returns `{ "additions": [] }` or evidence-backed additions.
+Persona exports `initialize(root, head, stream?)`, `readCheckpoint(root, stream?)`,
+`hasWork(root, memory, transcript?)` and `refine({ root, memory, transcript?, worker })`.
+Oneiros reads two evidence streams, each with its own cursor: memory and the
+chat transcript (`TranscriptSource`, the same `head`/`delta` shape). `refine`
+runs one round per initialised stream, memory first, sequentially under one
+lock; a stream without a checkpoint is skipped and any error aborts the call.
+Each round reads PROFILE as the previous round wrote it. Transcript rows are
+mapped by `transcriptToEvidence`; only owner inbound Telegram messages
+(`eligibleTranscriptRow`) are eligible, never assistant or scheduler rows.
+The worker receives a JSON baseline and bounded
+delta, and returns `{ "additions": [] }` or evidence-backed additions.
 Code permits only new plain-text bullets in existing PROFILE Voice, Interests
 and Expertise sections. It protects all other files/sections, validates evidence
 IDs, rejects inferred/imported/superseded evidence and preserves existing bytes.
@@ -153,8 +161,12 @@ AUTOINCREMENT insertion high watermark, including deleted IDs. Memory supplies
 bounded ascending pages; persona checkpoints only the reviewed page. No-op
 reviews also advance. New memory arriving during a run remains for a later run.
 
-State is private under `.fortytwo/oneiros/`: `checkpoint.json`, transient PID
-locks and an interrupted-write `pending.json`. Writes use fsync plus atomic
+State is private under `.fortytwo/oneiros/`: `checkpoint.json` and an
+interrupted-write `pending.json` for memory, `transcript-checkpoint.json` and
+`transcript-pending.json` for the transcript, plus transient PID locks. All
+leftover receipts are recovered before any round edits PROFILE.
+`initialize(root, cursor, 'transcript')` writes exactly the given cursor, so a
+migration can start the transcript at the position already consumed. Writes use fsync plus atomic
 rename. Recovery applies a validated receipt only if the context still matches
 its before/after hash; otherwise it stops for manual reconciliation. Retrying
 cannot apply the same receipt twice. Do not edit these files while a run is active.

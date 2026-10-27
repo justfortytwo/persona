@@ -4,6 +4,19 @@ import { closeSync, existsSync, fsyncSync, linkSync, lstatSync, mkdirSync, openS
 import { dirname, join, resolve, sep } from 'node:path';
 export interface Cursor { database: string; position: number }
 export const profilePath = 'context/PROFILE.md';
+// One checkpoint and one write-ahead receipt per evidence stream. Memory keeps
+// its original file names so existing installations continue unchanged.
+export type Stream = 'memory' | 'transcript';
+const streamFiles: Record<Stream, { checkpoint: string; pending: string }> = {
+  memory: { checkpoint: '.fortytwo/oneiros/checkpoint.json', pending: '.fortytwo/oneiros/pending.json' },
+  transcript: { checkpoint: '.fortytwo/oneiros/transcript-checkpoint.json', pending: '.fortytwo/oneiros/transcript-pending.json' },
+};
+function files(stream: Stream): { checkpoint: string; pending: string } {
+  if (!Object.hasOwn(streamFiles, stream)) throw new Error('Unknown Oneiros stream');
+  return streamFiles[stream];
+}
+export function checkpointPath(root: string, stream: Stream = 'memory'): string { return safePath(root, files(stream).checkpoint); }
+export function pendingPath(root: string, stream: Stream = 'memory'): string { return safePath(root, files(stream).pending); }
 export function safePath(root: string, relative: string): string {
   const base = resolve(root); let current = base;
   for (const part of relative.split('/')) {
@@ -25,8 +38,8 @@ export function atomic(path: string, content: string): void {
   renameSync(temp, path);
   const dir = openSync(dirname(path), 'r'); try { fsyncSync(dir); } finally { closeSync(dir); }
 }
-export function readCursor(root: string): Cursor | null {
-  const path = safePath(root, '.fortytwo/oneiros/checkpoint.json');
+export function readCursor(root: string, stream: Stream = 'memory'): Cursor | null {
+  const path = checkpointPath(root, stream);
   if (!existsSync(path)) return null;
   const c = JSON.parse(readFileSync(path, 'utf8'));
   validateCursor(c); return c;
@@ -85,12 +98,12 @@ export function lock(root: string): () => void {
   try { return acquire(path,candidate); } finally { unlinkSync(candidate); }
 }
 export interface Receipt { previous: Cursor; next: Cursor; before: string; after: string; content: string; contextHashes: Record<string,string> }
-export function recover(root: string): void {
-  const receiptPath = safePath(root, '.fortytwo/oneiros/pending.json');
+export function recover(root: string, stream: Stream = 'memory'): void {
+  const receiptPath = pendingPath(root, stream);
   if (!existsSync(receiptPath)) return;
   const r: Receipt = JSON.parse(readFileSync(receiptPath, 'utf8'));
   compatible(r.previous, r.next);
-  const cursor = readCursor(root);
+  const cursor = readCursor(root, stream);
   if (!cursor || cursor.database !== r.previous.database || ![r.previous.position, r.next.position].includes(cursor.position) || hash(r.content) !== r.after) throw new Error('Invalid recovery receipt');
   const path = safePath(root, profilePath); const current = hash(readFileSync(path, 'utf8'));
   if (current !== r.before && current !== r.after) throw new Error('Context changed during recovery; manual reconciliation required');
@@ -102,6 +115,6 @@ export function recover(root: string): void {
     }
     atomic(path, r.content);
   }
-  atomic(safePath(root, '.fortytwo/oneiros/checkpoint.json'), JSON.stringify(r.next));
+  atomic(checkpointPath(root, stream), JSON.stringify(r.next));
   unlinkSync(receiptPath);
 }
