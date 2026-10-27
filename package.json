@@ -1,6 +1,6 @@
 {
   "name": "@justfortytwo/persona",
-  "version": "1.0.0-2",
+  "version": "1.0.0-3",
   "description": "Templated identity, runtime context and internal Oneiros consolidation for fortytwo.",
   "type": "module",
   "license": "MIT",
