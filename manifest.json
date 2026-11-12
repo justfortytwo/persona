@@ -2,7 +2,7 @@
   "$schema": "https://raw.githubusercontent.com/justfortytwo/persona/main/manifest.schema.json",
   "version": "1",
   "manifestVersion": 1,
-  "description": "Field manifest for the fortytwo persona templates. The CLI (fortytwo init) prompts for each field, stores answers in the gitignored .fortytwo/identity.json, and renders templates/**/*.tmpl into the project's gitignored context/. Every {{placeholder}} used in a template has an entry here. `files` maps each template to its rendered output and render mode (managed = re-rendered every run; captured = written once, then owner-owned).",
+  "description": "Field manifest for the fortytwo persona templates. The CLI (fortytwo init) prompts for each field, stores answers in the gitignored .fortytwo/identity.json, and renders templates/**/*.tmpl into the project's gitignored context/. Every {{placeholder}} used in a template has an entry here. `files` maps each template to its rendered output and render mode (managed = re-rendered every run; captured = written once, then owner-owned). `skills` lists the Claude Code skills shipped under skills/: files without placeholders that the installer copies into the project's .claude/skills/ on init and on every update, overwriting what is there (machine-owned; personal adjustments belong in context/rules/).",
   "files": [
     { "template": "CLAUDE.md.tmpl", "output": "CLAUDE.md", "mode": "managed" },
     { "template": "context/INDEX.md.tmpl", "output": "context/INDEX.md", "mode": "managed" },
@@ -16,6 +16,10 @@
     { "template": "context/memory/owner-beliefs.md.tmpl", "output": "context/memory/owner-beliefs.md", "mode": "captured" },
     { "template": "context/memory/owner-profile.md.tmpl", "output": "context/memory/owner-profile.md", "mode": "captured" },
     { "template": "context/memory/owner-voice-and-writing.md.tmpl", "output": "context/memory/owner-voice-and-writing.md", "mode": "captured" }
+  ],
+  "skills": [
+    { "source": "skills/daily-briefing/SKILL.md", "output": ".claude/skills/daily-briefing/SKILL.md" },
+    { "source": "skills/learn-review/SKILL.md", "output": ".claude/skills/learn-review/SKILL.md" }
   ],
   "fields": [
     {

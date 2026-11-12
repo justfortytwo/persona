@@ -102,6 +102,23 @@ who keep editing their context after install:
 
 The `output` path is always the `template` path minus the trailing `.tmpl`.
 
+### The `skills` list
+
+`skills` maps each file under `skills/` to its place in the project's
+`.claude/skills/`. These are Claude Code skills that the scheduler's built-in
+jobs call:
+
+- **`daily-briefing`**: the morning rundown.
+- **`learn-review`**: the weekly review. It records proposals in
+  `context/rules/PROPOSED.md` and defines how an explicit owner approval moves
+  a rule to `context/rules/APPROVED.md`.
+
+Unlike templates they have no `{{placeholders}}` and are **machine-owned**: the
+installer copies them on `fortytwo init` and on every `fortytwo update`,
+overwriting its own earlier copy. Personal adjustments belong in
+`context/rules/APPROVED.md`, which both skills obey. A file at the same path
+that the installer did not write (no "Managed by fortytwo" marker) is left alone.
+
 ### Owner facts that are captured but never rendered
 
 A few fields exist purely for the owner record. `owner_email` and

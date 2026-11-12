@@ -25,7 +25,8 @@ templates/
     OWNER.md.tmpl, PROFILE.md.tmpl, SOUL.md.tmpl
     rules/APPROVED.md.tmpl, rules/PROPOSED.md.tmpl
     memory/*.md.tmpl           # memory corpus (INDEX + owner/domain files)
-manifest.json                  # { version, manifestVersion, description, files[], fields[] }
+skills/<name>/SKILL.md         # Claude Code skills the scheduler's built-in jobs call (copied, not rendered)
+manifest.json                  # { version, manifestVersion, description, files[], skills[], fields[] }
 fortytwo.compat.json           # contract majors: memoryToolContract, policySchema
 src/                          # internal Oneiros policy, state and consolidation API
 oneiros/prompt.md             # private isolated-worker instructions
@@ -33,7 +34,7 @@ test/                         # template conformance and Oneiros regressions
 .github/workflows/ci.yml       # calls justfortytwo/.github node-ci.yml@main
 ```
 
-Published files (`package.json` `files`): `templates`, `manifest.json`,
+Published files (`package.json` `files`): `templates`, `skills`, `manifest.json`,
 `fortytwo.compat.json`, `dist`, `oneiros`, `README.md`, `LICENSE`. Nothing else ships.
 
 ## Commands

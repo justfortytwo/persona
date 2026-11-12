@@ -61,7 +61,15 @@ interface Manifest {
   manifestVersion?: number;
   fields: ManifestField[];
   files?: PersonaFileEntry[];
+  skills?: SkillEntry[];
 }
+
+interface SkillEntry {
+  source: string;
+  output: string;
+}
+
+const SKILLS_DIR = join(ROOT, "skills");
 
 const manifestRaw = readFileSync(MANIFEST_PATH, "utf8");
 const manifest = JSON.parse(manifestRaw) as Manifest;
@@ -178,7 +186,7 @@ describe("persona manifest conformance", () => {
   it("leaks NO personal data in templates/ or manifest.json", () => {
     // Scan every shipped template file plus the manifest. README is exempt
     // (public author credit) and is intentionally excluded.
-    const scanTargets = [...walk(TEMPLATES_DIR), MANIFEST_PATH];
+    const scanTargets = [...walk(TEMPLATES_DIR), ...walk(SKILLS_DIR), MANIFEST_PATH];
     const hits: string[] = [];
     for (const file of scanTargets) {
       const text = readFileSync(file, "utf8").toLowerCase();
@@ -193,6 +201,58 @@ describe("persona manifest conformance", () => {
       hits,
       `Personal-data leak detected:\n  ${hits.join("\n  ")}`,
     ).toEqual([]);
+  });
+});
+
+// Skills are machine-owned files the installer copies verbatim into the
+// project's .claude/skills/ on init and on every update. The scheduler's
+// built-in jobs name them (daily-briefing, learn-review), so the map, the
+// directory names and the frontmatter must agree.
+describe("shipped skills", () => {
+  const skills = manifest.skills ?? [];
+  const onDisk = walk(SKILLS_DIR).map((f) => relative(ROOT, f)).sort();
+
+  it("ships the skills the scheduler's built-in jobs call", () => {
+    const names = skills.map((s) => s.source.split("/")[1]).sort();
+    expect(names).toEqual(["daily-briefing", "learn-review"]);
+  });
+
+  it("maps every file under skills/ exactly once", () => {
+    expect(skills.map((s) => s.source).sort()).toEqual(onDisk);
+  });
+
+  it("publishes the skills directory", () => {
+    const pkg = JSON.parse(readFileSync(join(ROOT, "package.json"), "utf8")) as { files: string[] };
+    expect(pkg.files).toContain("skills");
+  });
+
+  it("copies each skill to .claude/skills/<same path>, inside the project", () => {
+    for (const s of skills) {
+      expect(s.output, s.source).toBe(`.claude/${s.source}`);
+      expect(s.output.split("/"), s.source).not.toContain("..");
+    }
+  });
+
+  it("uses no {{placeholders}}: skills are copied, not rendered", () => {
+    for (const s of skills) {
+      expect(readFileSync(join(ROOT, s.source), "utf8"), s.source).not.toMatch(/\{\{/);
+    }
+  });
+
+  it("gives each SKILL.md frontmatter whose name matches its directory, plus a description", () => {
+    for (const s of skills.filter((e) => e.source.endsWith("/SKILL.md"))) {
+      const text = readFileSync(join(ROOT, s.source), "utf8");
+      const front = /^---\n([\s\S]*?)\n---\n/.exec(text)?.[1] ?? "";
+      const dir = s.source.split("/")[1];
+      expect(front, s.source).toMatch(new RegExp(`^name: ${dir}$`, "m"));
+      expect(front, s.source).toMatch(/^description: .{40,}$/m);
+    }
+  });
+
+  it("keeps learn-review propose-only and tied to the rules files", () => {
+    const text = readFileSync(join(SKILLS_DIR, "learn-review", "SKILL.md"), "utf8");
+    expect(text).toContain("context/rules/PROPOSED.md");
+    expect(text).toMatch(/Never edit `context\/rules\/APPROVED\.md` during a review/);
   });
 });
 
