@@ -7,7 +7,8 @@ import { existsSync, lstatSync, mkdirSync, readFileSync, readdirSync, realpathSy
 import { homedir } from 'node:os';
 import { join, resolve } from 'node:path';
 import * as memory from '@justfortytwo/memory';
-import { tick, makeOneirosHandler, recurrenceNext } from '@justfortytwo/scheduler';
+// The job API (listActive, claimDue, complete, fail, setRecurrence) is the scheduler's.
+import * as scheduler from '@justfortytwo/scheduler';
 import { createRunner } from '@justfortytwo/runner';
 import { workerPrompt } from '@justfortytwo/persona';
 // Existing shipped internal seams; no new public CLI or package export.
@@ -15,6 +16,7 @@ import { isolatedWorker } from './node_modules/@justfortytwo/scheduler/dist/onei
 import { applyProposal } from './node_modules/@justfortytwo/persona/dist/policy.js';
 import { readProjectSetting, DEFAULT_DB_PATH } from './node_modules/@justfortytwo/installer/dist/commands/init.js';
 import { liveRuntime, isPidAlive } from './node_modules/@justfortytwo/installer/dist/runtime.js';
+const { tick, makeOneirosHandler, recurrenceNext } = scheduler;
 
 // The release report supplies this external immutable docs pin. Check it before
 // inspecting project state or contacting the package registry/provider.
@@ -51,6 +53,8 @@ assert(baseline.head > 0 && baseline.curated?.length > 0, 'Complete strengthened
 
 // Require actual published versions/integrities, not links, local tarballs or a
 // local registry overlay. Network errors fail before adding evidence.
+// The next run must pin a scheduler that exports the job API (scheduler#2)
+// and the memory release it depends on; the pins below predate that move.
 const versions = { persona: '1.0.0-2', memory: '1.0.0-2', scheduler: '1.0.0-3', installer: '1.0.0-10', runner: '1.0.0-0' };
 const lock = JSON.parse(readFileSync('package-lock.json'));
 for (const [name, version] of Object.entries(versions)) {
@@ -113,7 +117,7 @@ try {
   const previous = checkpoint();
   assert.deepEqual(previous, accepted.checkpoint);
   assert.deepEqual(previous, memory.memoryHead(h), 'Begin with no unreviewed delta');
-  const active = memory.listActive(h);
+  const active = scheduler.listActive(h);
   assert(active.every(j => j.status === 'pending'), 'No jobs may be running');
   const jobs = active.filter(j => j.kind === 'persona.oneiros');
   assert.equal(jobs.length, 1); assert.equal(jobs[0].id, accepted.jobId);
@@ -129,12 +133,12 @@ try {
   assert.deepEqual(entries.map(e => e.id), [id]);
   report.evidenceId = id; report.previous = previous;
 
-  // store also enqueues reembed_memory. Use tick's existing injectable clock to
-  // claim only Oneiros, earlier than every other pending job, without editing
-  // those jobs. Reschedule Oneiros relative to wall time after this test tick.
-  const others = memory.listActive(h).filter(j => j.id !== job.id);
+  // Use tick's existing injectable clock to claim only Oneiros, earlier than
+  // every other pending job, without editing those jobs. Reschedule Oneiros
+  // relative to wall time after this test tick.
+  const others = scheduler.listActive(h).filter(j => j.id !== job.id);
   const dispatchTime = new Date(Math.min(Date.now(), ...others.map(j => Date.parse(j.run_at))) - 1000).toISOString();
-  memory.setRecurrence(h, job.id, job.recurrence, dispatchTime);
+  scheduler.setRecurrence(h, job.id, job.recurrence, dispatchTime);
   const trace = join(audit, 'claude-debug.log');
   const runner = createRunner({ spawn: (command, args, options) => {
     const expected = ['-p', '--output-format', 'json', '--safe-mode', '--tools', '', '--strict-mcp-config', '--mcp-config', '{"mcpServers":{}}', '--disable-slash-commands', '--no-session-persistence', '--setting-sources', '', '--system-prompt', workerPrompt, '--debug-file', trace, JSON.stringify(input)];
@@ -168,12 +172,12 @@ try {
   });
   await tick({
     claimDue: now => h.raw.transaction(() => {
-      const claimed = memory.claimDue(h, now);
+      const claimed = scheduler.claimDue(h, now);
       assert.deepEqual(claimed.map(j => j.id), [job.id]);
       return claimed;
     })(),
-    complete: (id, opts) => memory.complete(h, id, opts),
-    fail: (id, error, opts) => { report.failures.push(error); memory.fail(h, id, error, opts); },
+    complete: (id, opts) => scheduler.complete(h, id, opts),
+    fail: (id, error, opts) => { report.failures.push(error); scheduler.fail(h, id, error, opts); },
     registry: { get: kind => kind === 'persona.oneiros' ? handler : undefined },
     recurrenceNext: cron => recurrenceNext(cron, new Date().toISOString()),
     enqueueRun: fn => fn(),
@@ -188,11 +192,11 @@ try {
   assert.equal(report.notifications, 0);
   assert.deepEqual(checkpoint(), head); assert(checkpoint().position > previous.position);
   assert.deepEqual(memory.memoryHead(h), head, 'No maintenance notification was journaled');
-  const remaining = memory.listActive(h).filter(j => j.kind === 'persona.oneiros');
+  const remaining = scheduler.listActive(h).filter(j => j.kind === 'persona.oneiros');
   assert.equal(remaining.length, 1); assert.equal(remaining[0].id, job.id);
   assert.equal(remaining[0].recurrence, job.recurrence); assert.equal(remaining[0].status, 'pending');
   assert.equal(remaining[0].last_error, null);
-  assert.deepEqual(memory.listActive(h).filter(j => j.id !== job.id), others);
+  assert.deepEqual(scheduler.listActive(h).filter(j => j.id !== job.id), others);
   const profileAfter = readFileSync(profilePath, 'utf8');
   assert.equal(profileAfter, applyProposal(profileBefore, proposal, entries, head));
   save('profile-comparison.json', { before: profileBefore, after: profileAfter });
