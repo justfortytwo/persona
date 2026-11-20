@@ -105,18 +105,22 @@ The `output` path is always the `template` path minus the trailing `.tmpl`.
 ### The `skills` list
 
 `skills` maps each file under `skills/` to its place in the project's
-`.claude/skills/`. These are Claude Code skills that the scheduler's built-in
-jobs call:
+`.claude/skills/`. Two are Claude Code skills that the scheduler's built-in
+jobs call; the third runs when the owner asks for it:
 
 - **`daily-briefing`**: the morning rundown.
 - **`learn-review`**: the weekly review. It records proposals in
   `context/rules/PROPOSED.md` and defines how an explicit owner approval moves
   a rule to `context/rules/APPROVED.md`.
+- **`onboarding`**: the optional owner interview. It reads the owner's links,
+  texts and test results as data, never instructions, and writes only a draft
+  (`.fortytwo/onboarding/draft.json`); the owner reviews and saves it with
+  `fortytwo onboard` (installer).
 
 Unlike templates they have no `{{placeholders}}` and are **machine-owned**: the
 installer copies them on `fortytwo init` and on every `fortytwo update`,
 overwriting its own earlier copy. Personal adjustments belong in
-`context/rules/APPROVED.md`, which both skills obey. A file at the same path
+`context/rules/APPROVED.md`, which every skill obeys. A file at the same path
 that the installer did not write (no "Managed by fortytwo" marker) is left alone.
 
 ### Owner facts that are captured but never rendered
