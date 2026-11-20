@@ -1,5 +1,11 @@
 # Oneiros coordinated prerelease
 
+> Note: these steps record the 1.0.0-x release, when the job API (`listActive`,
+> `setRecurrence`, ...) was exported by `@justfortytwo/memory`. From the release
+> that closes justfortytwo/scheduler#2 it is exported by `@justfortytwo/scheduler`
+> instead (`docs/oneiros-live.mjs` already imports it from there), and `store`
+> no longer queues a `reembed_memory` job.
+
 Proposed train, verified on Node 22.22.1:
 
 | Package | Previous | Proposed | Runtime dependency / installer compatibility |
