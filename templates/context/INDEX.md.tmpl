@@ -24,7 +24,8 @@ Use the lightest orientation that gives enough context.
 4. Read `context/rules/APPROVED.md` directly for binding policy.
 5. Read `context/rules/PROPOSED.md` directly as pending, not binding policy.
 6. Via the Memory MCP: `query` recent Journal entries and `get_pending`
-   approvals. Via the scheduler MCP: `list_jobs` for due reminders.
+   approvals. Via the scheduler MCP: `list_jobs` for pending reminders (the
+   scheduler fires them on its own; do not deliver them yourself).
 7. `recall` top-k for carry-over threads; `recall_docs` only for memory-corpus topics.
 8. `reindex` changed markdown from `context/memory/`.
 9. Orient silently, then act.
