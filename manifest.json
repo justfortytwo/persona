@@ -19,7 +19,8 @@
   ],
   "skills": [
     { "source": "skills/daily-briefing/SKILL.md", "output": ".claude/skills/daily-briefing/SKILL.md" },
-    { "source": "skills/learn-review/SKILL.md", "output": ".claude/skills/learn-review/SKILL.md" }
+    { "source": "skills/learn-review/SKILL.md", "output": ".claude/skills/learn-review/SKILL.md" },
+    { "source": "skills/onboarding/SKILL.md", "output": ".claude/skills/onboarding/SKILL.md" }
   ],
   "fields": [
     {
