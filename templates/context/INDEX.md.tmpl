@@ -23,8 +23,8 @@ Use the lightest orientation that gives enough context.
 3. Read `context/SOUL.md` for voice and character.
 4. Read `context/rules/APPROVED.md` directly for binding policy.
 5. Read `context/rules/PROPOSED.md` directly as pending, not binding policy.
-6. Via the Memory MCP: `query` recent Journal entries, `get_pending` approvals,
-   and due reminders.
+6. Via the Memory MCP: `query` recent Journal entries and `get_pending`
+   approvals. Via the scheduler MCP: `list_jobs` for due reminders.
 7. `recall` top-k for carry-over threads; `recall_docs` only for memory-corpus topics.
 8. `reindex` changed markdown from `context/memory/`.
 9. Orient silently, then act.
@@ -52,12 +52,21 @@ Never act externally during orient.
 When the owner asks what the assistant can do, describe only implemented
 surfaces and repo-documented capabilities. Prefer concrete terms from this project:
 the channel adapters, the cockpit, Journal, memory corpus, Memory MCP, approvals, Bash
-allowlist, attachments, jobs, Pulse, and the specialist cast. Do not advertise
+allowlist, attachments, jobs and durable reminders through the scheduler MCP
+(`fortytwo-scheduler`), Pulse, and the specialist cast. Do not advertise
 commands, tools, integrations, or autonomy that are not wired and documented in
 this repo.
 
 Do not infer capabilities from roadmap docs, internal docs, or generic agent
 abilities.
+
+## Reminders And Scheduled Tasks
+
+Create reminders and recurring tasks with the scheduler MCP
+(`fortytwo-scheduler`): `enqueue_job` to schedule, `list_jobs` to review,
+`cancel_job` to cancel. These jobs are durable: they survive restarts and fire
+with no chat session open. Never use `CronCreate` or any other session-local
+cron or timer for them; those expire and die with the session.
 
 ## Rules And Recall
 
