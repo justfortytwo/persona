@@ -1,6 +1,6 @@
 ---
 name: onboarding
-description: Optional owner onboarding interview that builds a better owner profile from a conversation, the owner's links, uploaded texts and personality-test results, and drafts it for the owner to confirm with `fortytwo onboard`. Use when the owner asks to be onboarded, to set up or refresh their profile, or to tell you about themselves in depth.
+description: Optional owner onboarding interview that builds a better owner profile from a conversation, the owner's links, uploaded texts and personality-test results, and drafts it for the owner to confirm with `fortytwo onboard`. Use when the owner asks to be onboarded, to set up or refresh their profile, or to tell you about themselves in depth. Also use when the owner asks to complete, fill in or enrich their profile or persona fields, or says `fortytwo enrich` sent them here.
 ---
 
 <!-- Managed by fortytwo: rewritten by `fortytwo init` and `fortytwo update`.
@@ -11,7 +11,8 @@ description: Optional owner onboarding interview that builds a better owner prof
 Build a draft owner profile with the owner, then hand it to them to confirm.
 You never save the profile yourself: you write a draft file, and the owner
 saves it by running `fortytwo onboard` in a terminal, after reviewing every
-change. This works the same on a first run and on a re-run.
+change. This works the same on a first run and on a re-run. When the owner
+only wants their empty persona fields filled, use "Fill the gaps" below.
 
 ## Boundaries
 
@@ -66,6 +67,43 @@ change. This works the same on a first run and on a re-run.
    project folder: it shows what will change and saves only what they confirm.
    If they are chatting from their phone, tell them the draft waits there until
    they are at a terminal.
+
+## Fill the gaps
+
+Use this mode when the owner asks to complete, fill in or enrich their profile
+or persona fields, or says `fortytwo enrich` sent them here. The boundaries
+above still apply.
+
+1. **Find the empty fields.** Read `.fortytwo/identity.json` `answers` (read
+   only). An `owner_*` field is empty when its value is an empty string, an
+   empty list or missing. The full field list, with each field's `prompt` and
+   `type`, is `fields` in `node_modules/@justfortytwo/persona/manifest.json`.
+2. **Group them by topic.** A topic is the persona file a field renders into.
+   Work it out from the templates in `node_modules/@justfortytwo/persona/templates/`:
+   a field belongs to a file when that file's `.tmpl` contains its
+   placeholder (the key in double braces). Take the topics in this order and
+   put a field used by several files in the first one that uses it:
+   profile (`context/memory/owner-profile.md`), voice and writing
+   (`context/memory/owner-voice-and-writing.md`), beliefs
+   (`context/memory/owner-beliefs.md`), positioning
+   (`context/memory/domain-positioning.md`), public profile
+   (`context/PROFILE.md`), owner (`context/OWNER.md`), soul
+   (`context/SOUL.md`). `owner_email` and `owner_address` have no placeholder
+   on purpose: they form a small "contact" topic of their own.
+3. **Let the owner pick.** Show the topics that have empty fields, each with
+   its count, and ask which one to start with.
+4. **Ask.** Use the field's `prompt` as a guide, in the owner's language. Ask
+   one or two short questions at a time. "skip" leaves a field empty; "stop"
+   ends the questions. Never push through every field: after a topic, offer
+   another one or stop.
+5. **Draft and hand off.** Each answer becomes a `summary` entry with
+   `source: "interview"` and `observed: "observed"`. Then follow steps 5 to 7
+   above: show the draft, write it, hand off to `fortytwo onboard`.
+6. **Say where values show up.** Tell the owner that `fortytwo onboard` saves
+   the values, but files they already have, such as
+   `context/memory/owner-voice-and-writing.md`, are kept as they are. A kept
+   file is regenerated with the new values only if they move it aside and run
+   `fortytwo onboard` or `fortytwo enrich`.
 
 ## Draft format
 

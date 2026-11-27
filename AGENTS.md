@@ -25,7 +25,7 @@ templates/
     OWNER.md.tmpl, PROFILE.md.tmpl, SOUL.md.tmpl
     rules/APPROVED.md.tmpl, rules/PROPOSED.md.tmpl
     memory/*.md.tmpl           # memory corpus (INDEX + owner/domain files)
-skills/<name>/SKILL.md         # Claude Code skills: those the scheduler's built-in jobs call, plus the owner-invoked onboarding interview (copied, not rendered)
+skills/<name>/SKILL.md         # Claude Code skills: those the scheduler's built-in jobs call, plus the owner-invoked onboarding interview, which also fills empty persona fields by topic (copied, not rendered)
 manifest.json                  # { version, manifestVersion, description, files[], skills[], fields[] }
 fortytwo.compat.json           # contract majors: memoryToolContract, policySchema
 src/                          # internal Oneiros policy, state and consolidation API

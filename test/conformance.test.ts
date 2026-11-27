@@ -258,6 +258,14 @@ describe("shipped skills", () => {
     expect(text).toContain('"draftVersion": 1');
   });
 
+  it("triggers onboarding's fill-the-gaps mode from `fortytwo enrich`", () => {
+    const text = readFileSync(join(SKILLS_DIR, "onboarding", "SKILL.md"), "utf8");
+    const description = /^description: (.*)$/m.exec(text)?.[1] ?? "";
+    expect(description).toContain("complete, fill in or enrich their profile or persona fields");
+    expect(description).toContain("`fortytwo enrich` sent them here");
+    expect(text).toContain("## Fill the gaps");
+  });
+
   it("keeps learn-review propose-only and tied to the rules files", () => {
     const text = readFileSync(join(SKILLS_DIR, "learn-review", "SKILL.md"), "utf8");
     expect(text).toContain("context/rules/PROPOSED.md");
