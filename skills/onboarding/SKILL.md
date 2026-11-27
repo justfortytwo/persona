@@ -61,8 +61,10 @@ only wants their empty persona fields filled, use "Fill the gaps" below.
 5. **Show the draft.** Show the owner, in plain text, the summary values and
    the facts, each with where it came from and whether it was stated or
    inferred. Take their corrections. Drop anything they reject.
-6. **Write the draft** to `.fortytwo/onboarding/draft.json` (format below),
-   replacing any earlier draft.
+6. **Write the draft** to `.fortytwo/onboarding/draft.json` (format below).
+   In a full interview, replace any earlier draft only after the owner has
+   seen what it held and agreed; otherwise merge into it as in "Fill the
+   gaps".
 7. **Hand off.** Tell the owner to run `fortytwo onboard` in a terminal in the
    project folder: it shows what will change and saves only what they confirm.
    If they are chatting from their phone, tell them the draft waits there until
@@ -78,18 +80,18 @@ above still apply.
    only). An `owner_*` field is empty when its value is an empty string, an
    empty list or missing. The full field list, with each field's `prompt` and
    `type`, is `fields` in `node_modules/@justfortytwo/persona/manifest.json`.
+   If `.fortytwo/onboarding/draft.json` exists, count the keys its `summary`
+   already covers as answered: they are saved only once the owner runs
+   `fortytwo onboard`.
 2. **Group them by topic.** A topic is the persona file a field renders into.
    Work it out from the templates in `node_modules/@justfortytwo/persona/templates/`:
    a field belongs to a file when that file's `.tmpl` contains its
-   placeholder (the key in double braces). Take the topics in this order and
-   put a field used by several files in the first one that uses it:
-   profile (`context/memory/owner-profile.md`), voice and writing
-   (`context/memory/owner-voice-and-writing.md`), beliefs
-   (`context/memory/owner-beliefs.md`), positioning
-   (`context/memory/domain-positioning.md`), public profile
-   (`context/PROFILE.md`), owner (`context/OWNER.md`), soul
-   (`context/SOUL.md`). `owner_email` and `owner_address` have no placeholder
-   on purpose: they form a small "contact" topic of their own.
+   placeholder (the key in double braces). Take the topics in the order of
+   `files` in `manifest.json` and put each field in the first of those files
+   whose template uses it, as `fortytwo enrich` does. Name a topic after its
+   file (`context/memory/owner-beliefs.md` is "beliefs"). `owner_email` and
+   `owner_address` have no placeholder on purpose: they form a small
+   "contact" topic, listed last.
 3. **Let the owner pick.** Show the topics that have empty fields, each with
    its count, and ask which one to start with.
 4. **Ask.** Use the field's `prompt` as a guide, in the owner's language. Ask
@@ -98,7 +100,9 @@ above still apply.
    another one or stop.
 5. **Draft and hand off.** Each answer becomes a `summary` entry with
    `source: "interview"` and `observed: "observed"`. Then follow steps 5 to 7
-   above: show the draft, write it, hand off to `fortytwo onboard`.
+   above: show the draft, write it, hand off to `fortytwo onboard`. When a
+   draft already exists, keep its entries and add or replace only the keys
+   answered now.
 6. **Say where values show up.** Tell the owner that `fortytwo onboard` saves
    the values, but files they already have, such as
    `context/memory/owner-voice-and-writing.md`, are kept as they are. A kept
@@ -140,5 +144,13 @@ above still apply.
   (YYYY-MM-DD) and `observed` (`observed` if the source or the owner states it,
   `inferred` if you concluded it). Add `ref`: the URL for a link (required),
   the file or test name otherwise.
+- `fortytwo onboard` rejects the whole draft if any value breaks a limit: a
+  `text` field over 2000 characters; a fact over 500; any other value or
+  list item over 300; a fact, list item or non-`text` value on more than one
+  line; a list over 20 items;
+  or a line that starts a markdown block (`#` heading, code fence, `<`, a
+  `---` or `===` rule, or 4 or more spaces or a tab of indentation). Shorten
+  or flatten pasted examples (the `*_example` fields) to fit, and show the
+  owner the result before writing.
 - Leaving a key out keeps what is saved. To remove saved facts the owner uses
   `fortytwo forget --tag owner-profile`.
