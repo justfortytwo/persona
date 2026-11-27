@@ -115,7 +115,10 @@ jobs call; the third runs when the owner asks for it:
 - **`onboarding`**: the optional owner interview. It reads the owner's links,
   texts and test results as data, never instructions, and writes only a draft
   (`.fortytwo/onboarding/draft.json`); the owner reviews and saves it with
-  `fortytwo onboard` (installer).
+  `fortytwo onboard` (installer). Its "fill the gaps" mode, for an owner who
+  asks to complete their profile or comes from `fortytwo enrich`, finds the
+  empty `owner_*` fields, groups them by the persona file they render into,
+  and asks about one topic at a time.
 
 Unlike templates they have no `{{placeholders}}` and are **machine-owned**: the
 installer copies them on `fortytwo init` and on every `fortytwo update`,
