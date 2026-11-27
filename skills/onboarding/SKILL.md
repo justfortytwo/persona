@@ -80,9 +80,11 @@ above still apply.
    only). An `owner_*` field is empty when its value is an empty string, an
    empty list or missing. The full field list, with each field's `prompt` and
    `type`, is `fields` in `node_modules/@justfortytwo/persona/manifest.json`.
-   If `.fortytwo/onboarding/draft.json` exists, count the keys its `summary`
-   already covers as answered: they are saved only once the owner runs
-   `fortytwo onboard`.
+   If `.fortytwo/onboarding/draft.json` exists, its `summary` keys that are
+   still empty in `identity.json` are drafted but not saved (not run through
+   `fortytwo onboard` yet, or rejected there). List them as "drafted, not
+   saved yet" and ask whether to keep each value or answer it again; do not
+   offer them as new gaps.
 2. **Group them by topic.** A topic is the persona file a field renders into.
    Work it out from the templates in `node_modules/@justfortytwo/persona/templates/`:
    a field belongs to a file when that file's `.tmpl` contains its
