@@ -109,7 +109,7 @@ above still apply.
    the values, but files they already have, such as
    `context/memory/owner-voice-and-writing.md`, are kept as they are. A kept
    file is regenerated with the new values only if they move it aside and run
-   `fortytwo onboard` or `fortytwo enrich`.
+   `fortytwo enrich` (or `fortytwo onboard` while a draft is waiting).
 
 ## Draft format
 
